@@ -184,6 +184,35 @@ table.cmp th button.link{font-family:var(--f-body);text-transform:none;letter-sp
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
+<style id="compact-cards">
+/* cartões compactos no celular: selo no canto, números numa linha só */
+@media (max-width:640px){
+  table.cards tr{position:relative;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px 10px;padding:8px 11px;margin-bottom:6px;border-radius:8px}
+  table.cards td{font-size:.86rem;line-height:1.3}
+  table.cards td[data-l]::before{font-size:.54rem;letter-spacing:.08em;margin-bottom:0}
+  table.cards td:first-child:not(.full){position:absolute;top:8px;right:11px;font-size:.74rem;color:var(--ink-60)}
+  table.cards td:first-child:not(.full)::before{display:none}
+  table.cards td[data-l="Catálogo"] b{background:var(--plate);color:var(--plate-ink);padding:1px 6px;border-radius:4px;font-size:.78rem}
+  table.cards td:first-child:not(.full) + td{padding-right:46px}
+  table.cards tr td[data-l="Data-base"]:first-child + td{padding-right:84px}
+  table.cards tr:has(td[data-l="Data-base"]){grid-template-columns:1.35fr 1.15fr 1fr 1fr}
+  table.cards tr:has(td[data-l="Data-base"]) td{font-size:.82rem}
+  table.cards td.nm{font-size:.95rem;line-height:1.25}
+  table.cards td.nm .rg{font-size:.7rem}
+  table.cards td.full:last-child{font-size:.78rem;color:var(--ink-60);margin-top:1px}
+  table.cards td.full:last-child::before{display:none}
+  table.cards td .sub{font-size:.68rem;white-space:nowrap}
+  table.cards td.nm .sub,table.cards td.full .sub{white-space:normal}
+  table.cards .medal{min-width:1.5em;height:1.5em;font-size:.66rem;vertical-align:middle}
+  table.cards tr:not(:has(td[data-l="Idade"])) td[data-l="Classe"]{grid-column:span 2}
+  table.cards td[data-l^="Campe"],table.cards td[data-l^="Reserv"],table.cards td[data-l^="3º"]{grid-column:1/-1}
+  table.cards tr:has(td[data-l="Data-base"]) td[data-l="Peso"] .sub{white-space:normal}
+  .panel{padding:12px}
+  .lc{padding:10px 12px;gap:10px}
+  .lc .ct{font-size:1.3rem;padding:6px 7px 5px}
+}
+</style>
+
 <header class="top">
   <div class="wrap">
     <div class="brand">
