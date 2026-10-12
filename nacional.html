@@ -194,6 +194,9 @@ ol.clist li .sub{grid-column:2;font-size:.74rem;color:var(--ink-60)}
 ol.clist .medal,table.cards ol.clist .medal{min-width:2.2em;height:1.6em;font-size:.68rem;flex:none}
 @media (max-width:640px){table.cards tr.cldet{display:block;padding:8px 10px;background:var(--paper-2);margin-top:-4px}table.cards tr.cldet[hidden]{display:none}table.cards tr.cldet td.full:last-child{padding:0;background:none;color:var(--ink);font-size:.86rem;margin:0}}
 </style>
+<style id="rk-live">
+@media (max-width:640px){table.rk tr{grid-template-columns:repeat(4,minmax(0,1fr))}}
+</style>
 <style id="fx-group">
 .fxcat{margin:18px 0 2px}
 .fxcat:first-child{margin-top:4px}
@@ -307,6 +310,22 @@ function search(q){const t=String(q||'').trim();if(!t)return '';
   for(const [x,rows] of ex)h+=`<div class="stack" style="gap:6px"><h3>Expositor: ${esc(tc(x))} · ${rows.length} animais</h3>${listTable(rows,'c')}</div>`;
   for(const [c,rows] of cr)h+=`<div class="stack" style="gap:6px"><h3>Criador: ${esc(tc(c))} · ${rows.length} animais</h3>${listTable(rows,'x')}</div>`;
   return `<p class="status">Toque num animal para abrir a ficha.</p>`+h}
+
+const RPC=[0,28,24,20,16,12,8,6,5,4,3,2,1],RPCH={1:60,2:40,3:32},RPGR={1:100,2:80,3:65};const RKO={x:false,c:false};
+function rankRows(){const pts=new Map(),tit=new Map(),fst=new Set();
+  for(const o of Object.values(LIVE.subs||{}))for(const row of normRows(o.r)){const [c,p]=row;if(p===1)fst.add(c);const v=p<RPC.length?RPC[p]:0;if(v>(pts.get(c)||0))pts.set(c,v)}
+  for(const [k,o] of Object.entries(LIVE.camp||{})){const cat=k.split('|')[1];for(const [l,c] of (o.l||[])){if(l>3)continue;const v=(cat==='GRANDE'?RPGR:RPCH)[l];if(v>(pts.get(c)||0))pts.set(c,v);tit.set(c,(tit.get(c)||0)+1)}}
+  const agg=(keyOf)=>{const m=new Map();for(const [c,v] of pts){const r=BYCT.get(c);if(!r)continue;const nm=keyOf(r);if(!nm)continue;const k=keyN(nm);let o=m.get(k);if(!o)m.set(k,o={nm,p:0,n:0,t:0,f:0});o.p+=v;if(v)o.n++;o.t+=tit.get(c)||0;if(fst.has(c))o.f++}
+    const l=[...m.values()].filter(o=>o.p>0).sort((a,b)=>b.p-a.p||b.t-a.t||a.nm.localeCompare(b.nm));let pos=0,last=null;l.forEach((o,i)=>{if(o.p!==last){pos=i+1;last=o.p}o.pos=pos});return l};
+  return {ex:agg(RX),cr:agg(RC)}}
+function rankTable(l,k,lab){const op=RKO[k];const show=op?l:l.slice(0,10);
+  return `<div class="stack" style="gap:6px"><h3>${lab} <span class="status">${l.length} pontuando</span></h3><div class="tw"><table class="cards rk"><thead><tr><th class="r">Pos.</th><th>${lab.slice(0,-1)}</th><th class="r">Pontos</th><th class="r">Animais</th><th class="r">1º lugares</th><th class="r">Títulos</th></tr></thead><tbody>
+  ${show.map(o=>`<tr><td class="num" data-l="Pos."><b>${o.pos}º</b></td><td class="nm full"><button class="link" data-rq="${esc(o.nm)}">${esc(tc(o.nm))}</button></td><td class="r num" data-l="Pontos"><b>${nf0.format(o.p)}</b></td><td class="r num" data-l="Animais">${o.n}</td><td class="r num" data-l="1º lugares">${o.f}</td><td class="r num" data-l="Títulos">${o.t||'—'}</td></tr>`).join('')||'<tr><td class="empty" colspan="6">Sem resultados ainda.</td></tr>'}
+  </tbody></table></div>${l.length>10?`<button class="btn ghost small" data-rko="${k}">${op?'Mostrar só os 10 primeiros':'Ver todos ('+l.length+')'}</button>`:''}</div>`}
+function rankPanel(){const {ex,cr}=rankRows();
+  return `<div class="panel" id="rkPanel"><div class="head" style="margin-bottom:10px"><div><h3>Ranking parcial · expositores e criadores</h3><p class="note">Calculado com os resultados já divulgados, pela tabela de pontos dos julgamentos ACNB: classe 1º 28 · 2º 24 · 3º 20 · 4º 16 · 5º 12 · 6º 8 · 7º 6 · 8º 5 · 9º 4 · 10º 3 · 11º 2 · 12º 1; campeã(o) 60, reservada(o) 40, 3º prêmio 32; grande campeonato 100, 80 e 65. Cada animal soma só o maior prêmio. Ainda não entram as progênies, nem o índice da exposição e o filtro de sócios em dia. Toque num nome para ver os animais.</p></div></div>
+  <div class="grid2">${rankTable(ex,'x','Expositores')}${rankTable(cr,'c','Criadores')}</div></div>`}
+const RX=r=>S[r[7]].replace(/[\s.]+$/,''),RC=r=>(A[r[0]][8]||'').replace(/[\s.]+$/,'');
 function view(){
   const grp=new Map();K.forEach(r=>{const k=subKey(r);if(!grp.has(k))grp.set(k,[]);grp.get(k).push(r)});
   const keys=[...grp.keys()].sort((a,b)=>{const [sa,la]=a.split('-'),[sb,lb]=b.split('-');return (+sa)-(+sb)||la.localeCompare(lb)});
@@ -324,6 +343,7 @@ function view(){
   <div id="res" class="stack">${search(ST.q)}</div>
   ${camps.length?`<div class="panel"><h3 style="margin-bottom:10px">Campeonatos divulgados</h3><div class="tw"><table class="cards"><thead><tr><th>Campeonato</th><th>Campeã(o)</th><th>Reservada(o)</th><th>3º prêmio</th></tr></thead><tbody>
     ${camps.map(([k,o])=>{const [sx,cat]=k.split('|');const l=n=>{const x=(o.l||[]).find(y=>y[0]===n);const r=x&&BYCT.get(x[1]);return r?`<button class="link" data-ct="${r[9]}"><span class="num muted">${r[9]}</span> ${esc(A[r[0]][1])}</button><span class="sub">${esc(tc(S[r[7]]))} · ${nf0.format(r[5])} kg</span>`:'—'};const op=CKO.has(k);const nf=(o.cl||o.l||[]).length;return `<tr><td class="nm full"><button class="link camptg" data-ck="${esc(k)}" aria-expanded="${op}">${cat==='GRANDE'?(sx==='F'?'Grande Campeonato Fêmeas':'Grande Campeonato Machos'):(sx==='F'?'Fêmeas · ':'Machos · ')+esc(tc(cat))}</button><span class="sub">${op?'– fechar':'+ classificação completa'}${nf>3?' · '+nf+' animais':''}</span></td><td data-l="Campeã(o)">${l(1)}</td><td data-l="Reservada(o)">${l(2)}</td><td data-l="3º prêmio">${l(3)}</td></tr><tr class="cldet" data-ck="${esc(k)}"${op?'':' hidden'}><td class="full" colspan="4">${clList(o)}</td></tr>`}).join('')}</tbody></table></div></div>`:''}
+  ${rankPanel()}
   <div class="stack"><div class="head"><h3>Subcategorias</h3><div class="ctl">
     <div class="seg" id="fS">${[['T','Todas'],['F','Fêmeas'],['M','Machos']].map(([k,l])=>`<button data-k="${k}" aria-pressed="${ST.sx===k}">${l}</button>`).join('')}</div>
     <div class="seg" id="fT">${[['all','Todas'],['ok','Julgadas'],['wait','Aguardando']].map(([k,l])=>`<button data-k="${k}" aria-pressed="${ST.st===k}">${l}</button>`).join('')}</div></div></div>
@@ -338,7 +358,7 @@ function openCt(ct){ST.q=String(ct);$('#q').value=ST.q;$('#res').innerHTML=searc
 function bind(){const q=$('#q');q.oninput=()=>{ST.q=q.value;clearTimeout(q._t);q._t=setTimeout(()=>{$('#res').innerHTML=search(ST.q)},150)};q.onkeydown=e=>{if(e.key==='Enter')q.blur()};
   const seg=(id,k)=>$(id).onclick=e=>{const x=e.target.closest('button');if(x){ST[k]=x.dataset.k;const y=scrollY;render();scrollTo({top:y})}};seg('#fS','sx');seg('#fT','st');
   document.querySelectorAll('details.cls').forEach(d=>d.addEventListener('toggle',()=>{if(d.open){const b=d.querySelector('.body');if(!b.innerHTML){const seq=+d.dataset.fx;const g=K.filter(r=>r[10]===seq);const subs=[...new Set(g.map(r=>r[4]))].sort();b.innerHTML=subs.map(sb=>{const gg=g.filter(r=>r[4]===sb);const ok=!!LIVE.subs[seq+'-'+sb];return `<div class="stack" style="gap:6px;margin-bottom:12px"><p class="eyebrow">Sub ${sb} · ${ok?'julgada':'aguardando'} · ${gg.length} animais</p>${subTable(gg,ok,null)}</div>`}).join('')}}}))}
-document.addEventListener('click',e=>{const g=e.target.closest('.camptg');if(g){e.preventDefault();const k=g.dataset.ck;const op=!CKO.has(k);op?CKO.add(k):CKO.delete(k);const d=[...document.querySelectorAll('tr.cldet')].find(x=>x.dataset.ck===k);if(d)d.hidden=!op;g.setAttribute('aria-expanded',op);const sb=g.nextElementSibling;if(sb)sb.textContent=sb.textContent.replace(op?'+ classificação completa':'– fechar',op?'– fechar':'+ classificação completa');return}const t=e.target.closest('[data-ct]');if(t){e.preventDefault();openCt(+t.dataset.ct)}});
+document.addEventListener('click',e=>{const rq=e.target.closest('[data-rq]');if(rq){e.preventDefault();ST.q=rq.dataset.rq;$('#q').value=ST.q;$('#res').innerHTML=search(ST.q);const y=$('#res').getBoundingClientRect().top+scrollY-(document.querySelector('.top').offsetHeight+80);scrollTo({top:Math.max(0,y),behavior:'smooth'});return}const ro=e.target.closest('[data-rko]');if(ro){RKO[ro.dataset.rko]=!RKO[ro.dataset.rko];const y=scrollY;$('#rkPanel').outerHTML=rankPanel();scrollTo({top:y});return}const g=e.target.closest('.camptg');if(g){e.preventDefault();const k=g.dataset.ck;const op=!CKO.has(k);op?CKO.add(k):CKO.delete(k);const d=[...document.querySelectorAll('tr.cldet')].find(x=>x.dataset.ck===k);if(d)d.hidden=!op;g.setAttribute('aria-expanded',op);const sb=g.nextElementSibling;if(sb)sb.textContent=sb.textContent.replace(op?'+ classificação completa':'– fechar',op?'– fechar':'+ classificação completa');return}const t=e.target.closest('[data-ct]');if(t){e.preventDefault();openCt(+t.dataset.ct)}});
 const setHH=()=>{try{document.documentElement.style.setProperty('--hh',document.querySelector('.top').offsetHeight+'px')}catch(e){}};setHH();addEventListener('resize',setHH);
 render();
 </script>
