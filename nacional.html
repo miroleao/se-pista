@@ -232,6 +232,19 @@ details.subd>.sbody{padding:2px 0 10px}
 details.cls>.body{padding-left:14px}
 @media (max-width:640px){details.cls>.body{padding-left:4px}}
 </style>
+<style id="ttl">
+.ttl{display:inline-block;font-family:var(--f-disp);font-weight:800;font-size:.8rem;line-height:1.15;padding:3px 9px;border-radius:6px;letter-spacing:-.005em;white-space:normal;text-align:left}
+.ttl.t1{background:var(--tag);color:var(--tag-ink)}
+.ttl.t2{background:#D5D9DF;color:#16181C}
+.ttl.t3{background:#E8C29A;color:#3E2207}
+.ttl.gr{background:var(--plate);color:var(--tag);box-shadow:inset 0 0 0 1.5px var(--tag)}
+.ttl.gr.t2{color:#E6E9ED;box-shadow:inset 0 0 0 1.5px #B9BEC6}
+.ttl.gr.t3{color:#F0C9A0;box-shadow:inset 0 0 0 1.5px #C9925C}
+.ttls{display:flex;flex-wrap:wrap;gap:5px;margin:3px 0 1px}
+td .ttls{margin:4px 0 2px}
+tr.ttlrow td{background:color-mix(in srgb,var(--tag) 13%,transparent)}
+@media (max-width:640px){table.cards tr.ttlrow{border:2px solid var(--tag);background:color-mix(in srgb,var(--tag) 9%,var(--paper))}table.cards tr.ttlrow td{background:none}}
+</style>
 <style id="compact-cards">
 /* cartões compactos no celular: selo no canto, números numa linha só */
 @media (max-width:640px){
@@ -298,6 +311,9 @@ const titleOf=(cat,l,sx)=>{const f=sx==='F';if(cat==='GRANDE')return l===1?(f?'G
 const CKO=new Set();
 function clList(o){const rows=(o.cl&&o.cl.length?o.cl:(o.l||[]));if(!rows.length)return '<p class="muted">Ainda não divulgado.</p>';
   return `<ol class="clist">${rows.map(([n,c])=>{const r=BYCT.get(c);return `<li>${medal(n)}${r?`<button class="link" data-ct="${r[9]}"><span class="num muted">${r[9]}</span> <b>${esc(A[r[0]][1])}</b></button><span class="sub">${esc(tc(S[r[7]]))} · ${nf0.format(r[5])} kg</span>`:`<span class="num">${c}</span>`}</li>`}).join('')}</ol>`}
+const ttlSort=(a,b)=>((b[0]==='GRANDE')-(a[0]==='GRANDE'))||a[1]-b[1];
+function ttlB(cat,l,lab){return `<span class="ttl t${l}${cat==='GRANDE'?' gr':''}">${cat==='GRANDE'?'★ ':''}${esc(lab)}</span>`}
+function liveTT(ct){const o=[];for(const [k,v] of Object.entries(LIVE.camp||{})){const [sx,cat]=k.split('|');(v.l||[]).forEach(([l,c])=>{if(c===ct&&l<=3)o.push([cat,l,sx])})}o.sort(ttlSort);return o.length?`<span class="ttls">${o.map(([cat,l,sx])=>ttlB(cat,l,titleOf(cat,l,sx))).join('')}</span>`:''}
 function liveTitles(ct){const out=[];for(const [k,o] of Object.entries(LIVE.camp||{})){const [sx,cat]=k.split('|');(o.l||[]).forEach(([l,c])=>{if(c===ct&&l<=3)out.push(titleOf(cat,l,sx))})}return out}
 const ST={q:'',sx:'T',st:'all'};
 function status(r){const p=POS.get(r[9]);return p?`${medal(p)} <b class="num">de ${NC.get(r[9])}</b>`:AUS.has(r[9])?'<span class="pill est">ausente</span>':LIVE.subs[subKey(r)]?'<span class="pill est">sem colocação</span>':'<span class="pill cat">aguardando julgamento</span>'}
@@ -307,25 +323,25 @@ function card(r){const a=A[r[0]];const md=REF[a[2]+ageBin(r[6])];const nt=NOTA.g
     <div class="muted" style="font-size:.84rem">${a[2]==='F'?'Fêmea':'Macho'} · ${esc(tc(S[r[1]]))} ${r[2]}–${r[3]} m · Sub ${r[4]} · ${ageStr(r[6])} · nasc. ${fmtD(a[3])}</div>
     <div style="font-size:.86rem"><b class="num">${nf0.format(r[5])} kg</b>${md?` <span class="${r[5]>=md?'delta-up':'delta-dn'} num">${r[5]>=md?'+':'−'}${nf0.format(Math.abs(r[5]-md))}</span> <span class="muted">vs mediana nacional</span>`:''} · ${esc(tc(S[r[7]]))}</div>
     <div class="muted" style="font-size:.82rem">${esc(tc(a[4]))} × ${esc(tc(a[5]))}${a[6]?' · avô materno '+esc(tc(a[6])):''}${a[7]?' · avó materna '+esc(tc(a[7])):''}</div>
-    <div>${status(r)}${nt?` <span class="muted num" style="font-size:.82rem">nota ${nt[0]} · jurados ${nt.slice(1).map(x=>x+'º').join(' / ')}</span>`:''}${tl.map(t=>` <span class="pill N">${esc(t)}</span>`).join('')}</div></div></div>`}
+    ${liveTT(r[9])}<div>${status(r)}${nt?` <span class="muted num" style="font-size:.82rem">nota ${nt[0]} · jurados ${nt.slice(1).map(x=>x+'º').join(' / ')}</span>`:''}</div></div></div>`}
 function history(ai){const hs=(HA.get(ai)||[]).slice().sort((x,y)=>E[y[0]].db.localeCompare(E[x[0]].db));const cs=CHA.get(ai)||[];
   if(!hs.length)return `<div class="panel alt"><h3 style="margin-bottom:4px">Histórico em pista</h3><p class="muted">Primeira exposição na base (sem julgamentos anteriores registrados).</p></div>`;
-  return `<div class="panel"><h3 style="margin-bottom:8px">Histórico em pista · ${hs.length} julgamento${hs.length>1?'s':''}${cs.filter(c=>c[3]===1).length?` · ${cs.filter(c=>c[3]===1).length} título(s)`:''}</h3>
-  <div class="tw"><table class="cards"><thead><tr><th>Data-base</th><th>Exposição</th><th>Classe</th><th>Colocação</th><th>Idade</th><th class="r">Peso</th><th>Títulos</th></tr></thead><tbody>
-  ${hs.map(h=>{const e=E[h[0]];const t=cs.filter(c=>c[0]===h[0]);const g=gpd(h[7],h[8]);return `<tr><td class="num" data-l="Data-base">${fmtD(e.db)}</td><td class="full">${esc(e.nome)} <span class="pill ${e.nv==='N'?'N':'R'}">${NIV[e.nv]}</span></td><td data-l="Classe">${esc(tc(S[h[2]]))}<span class="sub">${h[3]}–${h[4]} m</span></td><td data-l="Colocação">${medal(h[5])} <span class="muted num">de ${h[6]}</span></td><td class="num" data-l="Idade">${ageStr(h[8])}</td><td class="r num" data-l="Peso">${h[7]?nf0.format(h[7]):'—'}${g?`<span class="sub">${nf2.format(g)} kg/dia</span>`:''}</td><td class="full" data-l="Títulos">${t.map(c=>`<span class="pill ${c[3]===1?'N':'cat'} chip">${esc(titleOf(S[c[2]],c[3],c[4]))}</span>`).join(' ')||'—'}</td></tr>`}).join('')}
+  return `<div class="panel"><h3 style="margin-bottom:8px">Histórico em pista · ${hs.length} julgamento${hs.length>1?'s':''}${cs.length?` · ${cs.length} título${cs.length>1?'s':''}`:''}</h3>
+  <div class="tw"><table class="cards"><thead><tr><th>Data-base</th><th>Exposição · títulos</th><th>Classe</th><th>Colocação</th><th>Idade</th><th class="r">Peso</th></tr></thead><tbody>
+  ${hs.map(h=>{const e=E[h[0]];const t=cs.filter(c=>c[0]===h[0]).map(c=>[S[c[2]],c[3],c[4]]).sort(ttlSort);const g=gpd(h[7],h[8]);return `<tr class="${t.length?'ttlrow':''}"><td class="num" data-l="Data-base">${fmtD(e.db)}</td><td class="full">${esc(e.nome)} <span class="pill ${e.nv==='N'?'N':'R'}">${NIV[e.nv]}</span>${t.length?`<span class="ttls">${t.map(([cat,l,sx])=>ttlB(cat,l,titleOf(cat,l,sx))).join('')}</span>`:''}</td><td data-l="Classe">${esc(tc(S[h[2]]))}<span class="sub">${h[3]}–${h[4]} m</span></td><td data-l="Colocação">${medal(h[5])} <span class="muted num">de ${h[6]}</span></td><td class="num" data-l="Idade">${ageStr(h[8])}</td><td class="r num" data-l="Peso">${h[7]?nf0.format(h[7]):'—'}${g?`<span class="sub">${nf2.format(g)} kg/dia</span>`:''}</td></tr>`}).join('')}
   </tbody></table></div></div>`}
 function campBlock(sx,cat,title){const o=(LIVE.camp||{})[sx+'|'+cat];
   const l=n=>{const x=o&&(o.l||[]).find(y=>y[0]===n);const r=x&&BYCT.get(x[1]);return r?`<button class="link" data-ct="${r[9]}"><span class="num muted">${r[9]}</span> ${esc(A[r[0]][1])}</button><span class="sub">${esc(tc(S[r[7]]))} · ${nf0.format(r[5])} kg</span>`:'—'};
   return `<div class="panel alt"><h3 style="margin-bottom:8px">${title}</h3>${o?`<div class="ped"><b>Campeã(o)</b><span>${l(1)}</span><b>Reservada(o)</b><span>${l(2)}</span><b>3º prêmio</b><span>${l(3)}</span></div>`:'<p class="muted">Ainda não divulgado.</p>'}</div>`}
 function subTable(rows,ok,me){rows.sort((a,b)=>ok?((POS.get(a[9])||99)-(POS.get(b[9])||99)):a[9]-b[9]);
   return `<div class="tw"><table class="cards"><thead><tr><th>Cat.</th><th>Animal</th><th>Colocação</th><th class="r">Nota · jurados</th><th>Idade</th><th class="r">Peso</th><th>Expositor</th></tr></thead><tbody>
-  ${rows.map(r=>{const a=A[r[0]];const p=POS.get(r[9]);const nt=NOTA.get(r[9]);return `<tr class="click ${r===me?'me':''}" data-ct="${r[9]}"><td class="num" data-l="Catálogo"><b>${r[9]}</b></td><td class="nm full">${esc(a[1])} <span class="rg">${esc(a[0])}</span>${r===me?' <span class="pill N">pesquisado</span>':''}<span class="pm">${esc(tc(a[4]||'—'))} × ${esc(tc(a[5]||'—'))}</span></td><td data-l="Colocação">${p?medal(p):AUS.has(r[9])?'<span class="muted">ausente</span>':'—'}</td><td class="r num" data-l="Nota">${nt?nt[0]:'—'}${nt&&nt[1]!=null?`<span class="jv" title="Colocação dada por cada jurado">${nt.slice(1,4).map(x=>x+'º').join(' · ')}</span>`:''}</td><td class="num" data-l="Idade">${ageStr(r[6])}</td><td class="r num" data-l="Peso">${nf0.format(r[5])}</td><td class="full" data-l="Expositor">${esc(tc(S[r[7]]))}</td></tr>`}).join('')}</tbody></table></div>`}
+  ${rows.map(r=>{const a=A[r[0]];const p=POS.get(r[9]);const nt=NOTA.get(r[9]);const tt=liveTT(r[9]);return `<tr class="click ${r===me?'me':''} ${tt?'ttlrow':''}" data-ct="${r[9]}"><td class="num" data-l="Catálogo"><b>${r[9]}</b></td><td class="nm full">${esc(a[1])} <span class="rg">${esc(a[0])}</span>${r===me?' <span class="pill N">pesquisado</span>':''}${tt}<span class="pm">${esc(tc(a[4]||'—'))} × ${esc(tc(a[5]||'—'))}</span></td><td data-l="Colocação">${p?medal(p):AUS.has(r[9])?'<span class="muted">ausente</span>':'—'}</td><td class="r num" data-l="Nota">${nt?nt[0]:'—'}${nt&&nt[1]!=null?`<span class="jv" title="Colocação dada por cada jurado">${nt.slice(1,4).map(x=>x+'º').join(' · ')}</span>`:''}</td><td class="num" data-l="Idade">${ageStr(r[6])}</td><td class="r num" data-l="Peso">${nf0.format(r[5])}</td><td class="full" data-l="Expositor">${esc(tc(S[r[7]]))}</td></tr>`}).join('')}</tbody></table></div>`}
 function context(r0){const sx=A[r0[0]][2],cat=S[r0[1]];const same=K.filter(r=>r[10]===r0[10]);const subs=[...new Set(same.map(r=>r[4]))].sort();
   return `<div class="stack"><h3>Mesma subcategoria · ${esc(tc(cat))} ${r0[2]}–${r0[3]} meses</h3>${subs.map(s=>{const g=same.filter(r=>r[4]===s);const ok=!!LIVE.subs[r0[10]+'-'+s];return `<div class="stack" style="gap:6px"><p class="eyebrow">Sub ${s} · ${ok?'julgada':'aguardando'} · ${g.length} animais</p>${subTable(g,ok,r0)}</div>`}).join('')}</div>
   <div class="grid2">${campBlock(sx,cat,'Campeonato '+esc(tc(cat)))}${campBlock(sx,'GRANDE',sx==='F'?'Grande Campeonato Fêmeas':'Grande Campeonato Machos')}</div>`}
 function listTable(rows,showX){rows=rows.slice().sort((a,b)=>a[9]-b[9]);
   return `<div class="tw"><table class="cards"><thead><tr><th>Cat.</th><th>Animal</th><th>Classe</th><th>Colocação</th><th class="r">Peso</th><th>${showX==='c'?'Criador':'Expositor'}</th></tr></thead><tbody>
-  ${rows.map(r=>{const a=A[r[0]];const p=POS.get(r[9]);const tl=liveTitles(r[9]);return `<tr class="click" data-ct="${r[9]}"><td class="num" data-l="Catálogo"><b>${r[9]}</b></td><td class="nm full">${esc(a[1])} <span class="rg">${esc(a[0])}</span>${tl.map(t=>` <span class="pill N">${esc(t)}</span>`).join('')}</td><td data-l="Classe">${esc(tc(S[r[1]]))}<span class="sub">${r[2]}–${r[3]} m · Sub ${r[4]}</span></td><td data-l="Colocação">${p?`${medal(p)} <span class="muted num">de ${NC.get(r[9])}</span>`:AUS.has(r[9])?'<span class="muted">ausente</span>':'<span class="muted">aguardando</span>'}</td><td class="r num" data-l="Peso">${nf0.format(r[5])}</td><td class="full" data-l="${showX==='c'?'Criador':'Expositor'}">${esc(tc(showX==='c'?a[8]:S[r[7]]))}</td></tr>`}).join('')}</tbody></table></div>`}
+  ${rows.map(r=>{const a=A[r[0]];const p=POS.get(r[9]);const tl=liveTitles(r[9]);return `<tr class="click ${tl.length?'ttlrow':''}" data-ct="${r[9]}"><td class="num" data-l="Catálogo"><b>${r[9]}</b></td><td class="nm full">${esc(a[1])} <span class="rg">${esc(a[0])}</span>${liveTT(r[9])}</td><td data-l="Classe">${esc(tc(S[r[1]]))}<span class="sub">${r[2]}–${r[3]} m · Sub ${r[4]}</span></td><td data-l="Colocação">${p?`${medal(p)} <span class="muted num">de ${NC.get(r[9])}</span>`:AUS.has(r[9])?'<span class="muted">ausente</span>':'<span class="muted">aguardando</span>'}</td><td class="r num" data-l="Peso">${nf0.format(r[5])}</td><td class="full" data-l="${showX==='c'?'Criador':'Expositor'}">${esc(tc(showX==='c'?a[8]:S[r[7]]))}</td></tr>`}).join('')}</tbody></table></div>`}
 function search(q){const t=String(q||'').trim();if(!t)return '';
   if(/^\d+$/.test(t)){const r=BYCT.get(+t);return r?card(r)+history(r[0])+context(r):'<p class="empty">Nenhum animal com esse número no catálogo.</p>'}
   const k=keyN(t);if(k.length<2)return '';
