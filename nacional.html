@@ -221,6 +221,17 @@ details.catg>.gbody details.cls:first-child{border-top:0}
 details.cpd .body ol.clist{background:var(--paper-2);border-radius:8px;padding:10px 12px}
 @media (max-width:640px){details.catg>.gbody{padding-left:8px}}
 </style>
+<style id="subd">
+details.subd{border-top:1px dashed var(--rule)}
+details.subd:first-child{border-top:0}
+details.subd>summary{cursor:pointer;padding:8px 2px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;list-style:none;font-size:.9rem}
+details.subd>summary::-webkit-details-marker{display:none}
+details.subd>summary::before{content:"+";font-family:var(--f-mono);width:1em;color:var(--ink-60)}
+details.subd[open]>summary::before{content:"–"}
+details.subd>.sbody{padding:2px 0 10px}
+details.cls>.body{padding-left:14px}
+@media (max-width:640px){details.cls>.body{padding-left:4px}}
+</style>
 <style id="compact-cards">
 /* cartões compactos no celular: selo no canto, números numa linha só */
 @media (max-width:640px){
@@ -361,7 +372,10 @@ function fxAll(){const grp=new Map();K.forEach(r=>{const k=subKey(r);if(!grp.has
   const keys=[...grp.keys()].sort((a,b)=>{const [sa,la]=a.split('-'),[sb,lb]=b.split('-');return (+sa)-(+sb)||la.localeCompare(lb)});
   const fxm=new Map();keys.forEach(k=>{const g=grp.get(k);const seq=g[0][10];if(!fxm.has(seq))fxm.set(seq,{seq,rows:[],subs:[],done:0,tk:'',t:''});const f=fxm.get(seq);f.rows.push(...g);f.subs.push(g[0][4]);const o=LIVE.subs[k];if(o){f.done++;const tk=tKey(o.t);if(tk>f.tk){f.tk=tk;f.t=o.t}}});
   return [...fxm.values()].filter(f=>ST.sx==='T'||A[f.rows[0][0]][2]===ST.sx)}
-function fxBody(seq){const g=K.filter(r=>r[10]===seq);const tk=sb=>{const o=LIVE.subs[seq+'-'+sb];return o?tKey(o.t)||'0':''};const subs=[...new Set(g.map(r=>r[4]))].sort((a,b)=>tk(b).localeCompare(tk(a))||a.localeCompare(b));return subs.map(sb=>{const gg=g.filter(r=>r[4]===sb);const ok=!!LIVE.subs[seq+'-'+sb];return `<div class="stack" style="gap:6px;margin-bottom:12px"><p class="eyebrow">Sub ${sb} · ${ok?'julgada':'aguardando'} · ${gg.length} animais</p>${subTable(gg,ok,null)}</div>`}).join('')}
+function subSum(ok,sb,n,w,t){return `<span class="pill ${ok?'N':'cat'}">${ok?'Julgada':'Aguardando'}</span><b>Sub ${sb}</b><span class="status">${n} animais</span>${t?`<span class="status">${esc(tShow(t))}</span>`:''}${w?`<span class="muted fxwin">1º ${w}</span>`:''}`}
+function fxBody(seq){const g=K.filter(r=>r[10]===seq);const tk=sb=>{const o=LIVE.subs[seq+'-'+sb];return o?tKey(o.t)||'0':''};const subs=[...new Set(g.map(r=>r[4]))].sort((a,b)=>tk(b).localeCompare(tk(a))||a.localeCompare(b));return subs.map(sb=>{const gg=g.filter(r=>r[4]===sb);const o=LIVE.subs[seq+'-'+sb];const w=gg.find(r=>POS.get(r[9])===1);return `<details class="subd" data-sb="${seq}-${sb}"><summary>${subSum(!!o,sb,gg.length,w?esc(A[w[0]][1]):'',o&&o.t)}</summary><div class="sbody"></div></details>`}).join('')}
+function subBody(key){const [seq,sb]=key.split('-');const gg=K.filter(r=>r[10]===+seq&&r[4]===sb);return subTable(gg,!!LIVE.subs[key],null)}
+document.addEventListener('toggle',e=>{const d=e.target;if(d.matches&&d.matches('details.subd')&&d.open){const b=d.querySelector('.sbody');if(b&&!b.innerHTML)b.innerHTML=subBody(d.dataset.sb)}},true);
 function fxDet(fx,open,pend){const g=fx.rows;const r0=g[0];const sx=A[r0[0]][2];const cat=S[r0[1]];
   const st=fx.done===fx.subs.length?'<span class="pill N">Julgada</span>':fx.done?`<span class="pill I">Parcial ${fx.done}/${fx.subs.length}</span>`:'<span class="pill cat">Aguardando</span>';
   const win=fx.subs.map(s=>{const w=g.find(r=>r[4]===s&&POS.get(r[9])===1);return w?`${fx.subs.length>1?s+': ':''}${esc(A[w[0]][1])}`:''}).filter(Boolean).join(' · ');
@@ -372,7 +386,7 @@ function campDet(k,o,open){const [sx,cat]=k.split('|');const nm=n=>{const x=(o.l
 function recentSec(){const it=[];fxAll().forEach(f=>{if(f.done)it.push({tk:f.tk,o:1,h:o=>fxDet(f,o)})});
   Object.entries(LIVE.camp||{}).forEach(([k,o])=>{const sx=k.split('|')[0];if(ST.sx!=='T'&&sx!==ST.sx)return;it.push({tk:tKey(o.t),o:2,h:op=>campDet(k,o,op)})});
   it.sort((a,b)=>b.tk.localeCompare(a.tk)||b.o-a.o);
-  return it.map((x,i)=>x.h(i===0)).join('')||'<p class="empty">Nenhum resultado ainda.</p>'}
+  return it.map(x=>x.h(false)).join('')||'<p class="empty">Nenhum resultado ainda.</p>'}
 function pendSec(){const gm=new Map();fxAll().filter(f=>!f.done).forEach(f=>{const r0=f.rows[0];const k=A[r0[0]][2]+'|'+S[r0[1]];if(!gm.has(k))gm.set(k,[]);gm.get(k).push(f)});
   return [...gm.entries()].map(([k,fs])=>{const [sx,cat]=k.split('|');const n=fs.reduce((a,f)=>a+f.rows.length,0);const ids=fs.reduce((a,f)=>a+f.subs.length,0);const a0=fs[0].rows[0],a1=fs[fs.length-1].rows[0];
     return `<details class="cls catg"><summary><span class="pill cat">Aguardando</span><b>${sx==='F'?'Fêmeas':'Machos'} · ${esc(tc(cat))}</b><span class="muted num">${a0[2]}–${a1[3]} m · ${fs.length} faixa${fs.length>1?'s':''} · ${ids} sub${ids>1?'s':''}</span><span class="status">${n} animais</span></summary><div class="gbody">${fs.map(f=>fxDet(f,false,true)).join('')}</div></details>`}).join('')||'<p class="empty">Tudo julgado.</p>'}
@@ -404,7 +418,7 @@ function render(){$('#main').innerHTML=`<section class="view">${view()}</section
 function openCt(ct){ST.q=String(ct);$('#q').value=ST.q;$('#res').innerHTML=search(ST.q);const y=$('#res').getBoundingClientRect().top+scrollY-(document.querySelector('.top').offsetHeight+80);scrollTo({top:Math.max(0,y),behavior:'smooth'})}
 function bind(){const q=$('#q');q.oninput=()=>{ST.q=q.value;clearTimeout(q._t);q._t=setTimeout(()=>{$('#res').innerHTML=search(ST.q)},150)};q.onkeydown=e=>{if(e.key==='Enter')q.blur()};
   const seg=(id,k)=>$(id).onclick=e=>{const x=e.target.closest('button');if(x){ST[k]=x.dataset.k;const y=scrollY;render();scrollTo({top:y})}};seg('#fS','sx');
-  document.querySelectorAll('details.cls').forEach(d=>d.addEventListener('toggle',()=>{if(d.open&&d.dataset.fx){const b=d.querySelector('.body');if(!b.innerHTML){const seq=+d.dataset.fx;const g=K.filter(r=>r[10]===seq);const subs=[...new Set(g.map(r=>r[4]))].sort();b.innerHTML=subs.map(sb=>{const gg=g.filter(r=>r[4]===sb);const ok=!!LIVE.subs[seq+'-'+sb];return `<div class="stack" style="gap:6px;margin-bottom:12px"><p class="eyebrow">Sub ${sb} · ${ok?'julgada':'aguardando'} · ${gg.length} animais</p>${subTable(gg,ok,null)}</div>`}).join('')}}}))}
+  document.querySelectorAll('details.cls').forEach(d=>d.addEventListener('toggle',()=>{if(d.open&&d.dataset.fx){const b=d.querySelector('.body');if(b&&!b.innerHTML)b.innerHTML=fxBody(+d.dataset.fx)}}))}
 document.addEventListener('click',e=>{const rq=e.target.closest('[data-rq]');if(rq){e.preventDefault();ST.q=rq.dataset.rq;$('#q').value=ST.q;$('#res').innerHTML=search(ST.q);const y=$('#res').getBoundingClientRect().top+scrollY-(document.querySelector('.top').offsetHeight+80);scrollTo({top:Math.max(0,y),behavior:'smooth'});return}const ro=e.target.closest('[data-rko]');if(ro){RKO[ro.dataset.rko]=!RKO[ro.dataset.rko];const y=scrollY;$('#rkPanel').outerHTML=rankPanel();scrollTo({top:y});return}const g=e.target.closest('.camptg');if(g){e.preventDefault();const k=g.dataset.ck;const op=!CKO.has(k);op?CKO.add(k):CKO.delete(k);const d=[...document.querySelectorAll('tr.cldet')].find(x=>x.dataset.ck===k);if(d)d.hidden=!op;g.setAttribute('aria-expanded',op);const sb=g.nextElementSibling;if(sb)sb.textContent=sb.textContent.replace(op?'+ classificação completa':'– fechar',op?'– fechar':'+ classificação completa');return}const t=e.target.closest('[data-ct]');if(t){e.preventDefault();openCt(+t.dataset.ct)}});
 const setHH=()=>{try{document.documentElement.style.setProperty('--hh',document.querySelector('.top').offsetHeight+'px')}catch(e){}};setHH();addEventListener('resize',setHH);
 render();

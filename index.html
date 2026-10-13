@@ -221,6 +221,17 @@ details.catg>.gbody details.cls:first-child{border-top:0}
 details.cpd .body ol.clist{background:var(--paper-2);border-radius:8px;padding:10px 12px}
 @media (max-width:640px){details.catg>.gbody{padding-left:8px}table.cards tr:has(td[data-l="GPD"]){grid-template-columns:repeat(5,minmax(0,1fr))}}
 </style>
+<style id="subd">
+details.subd{border-top:1px dashed var(--rule)}
+details.subd:first-child{border-top:0}
+details.subd>summary{cursor:pointer;padding:8px 2px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;list-style:none;font-size:.9rem}
+details.subd>summary::-webkit-details-marker{display:none}
+details.subd>summary::before{content:"+";font-family:var(--f-mono);width:1em;color:var(--ink-60)}
+details.subd[open]>summary::before{content:"–"}
+details.subd>.sbody{padding:2px 0 10px}
+details.cls>.body{padding-left:14px}
+@media (max-width:640px){details.cls>.body{padding-left:4px}}
+</style>
 <style id="compact-cards">
 /* cartões compactos no celular: selo no canto, números numa linha só */
 @media (max-width:640px){
@@ -1091,10 +1102,13 @@ function lvFx(){const f=ST.lv;const grp=new Map();LK.forEach(r=>{const k=subKey(
   const keys=[...grp.keys()].sort((a,b)=>{const [sa,la]=a.split('-'),[sb,lb]=b.split('-');return (+sa)-(+sb)||la.localeCompare(lb)});
   const fxm=new Map();keys.forEach(k=>{const g=grp.get(k);const seq=g[0][13];if(!fxm.has(seq))fxm.set(seq,{seq,rows:[],subs:[],done:0,tk:'',t:''});const x=fxm.get(seq);x.rows.push(...g);x.subs.push(g[0][14]||'A');const o=LIVE.subs[k];if(o){x.done++;const tk=tKey(o.t);if(tk>x.tk){x.tk=tk;x.t=o.t}}});
   return [...fxm.values()].filter(x=>f.sx==='T'||A[x.rows[0][1]][2]===f.sx)}
-function lvFxBody(fx){const r0=fx.rows[0];const tk=sb=>{const o=LIVE.subs[r0[13]+'-'+sb];return o?tKey(o.t)||'0':''};const subs=fx.subs.slice().sort((a,b)=>tk(b).localeCompare(tk(a))||a.localeCompare(b));
-  return subs.map(sb=>{const g=fx.rows.filter(r=>(r[14]||'A')===sb);const ok=!!LIVE.subs[r0[13]+'-'+sb];g.sort((a,b)=>ok?((a[6]||99)-(b[6]||99)):a[12]-b[12]);return `<div class="stack" style="gap:6px;margin-bottom:12px"><p class="eyebrow">Sub ${sb} · ${ok?'julgada':'aguardando'} · ${g.length} animais</p><div class="tw" style="margin-bottom:10px"><table class="cards"><thead><tr><th>Cat.</th><th>Animal</th><th>Colocação</th><th class="r">Nota · jurados</th><th>Idade</th><th class="r">Peso</th><th class="r">GPD</th><th>Expositor</th></tr></thead><tbody>
+function lvSubTbl(key){const [seq,sb]=key.split('-');const g=LK.filter(r=>r[13]===+seq&&(r[14]||'A')===sb);const ok=!!LIVE.subs[key];g.sort((a,b)=>ok?((a[6]||99)-(b[6]||99)):a[12]-b[12]);return `<div class="tw" style="margin-bottom:10px"><table class="cards"><thead><tr><th>Cat.</th><th>Animal</th><th>Colocação</th><th class="r">Nota · jurados</th><th>Idade</th><th class="r">Peso</th><th class="r">GPD</th><th>Expositor</th></tr></thead><tbody>
     ${g.map(r=>{const a=A[r[1]];const gg=gpd(r);const nt=LNOTA.get(r[12]);return `<tr class="${seR(r)?'se':''}"><td class="num" data-l="Catálogo"><b>${r[12]}</b></td><td class="nm full">${animalLink(r[1])} <span class="rg">${esc(a[0])}</span>${seTag(r[1],r[10])}${r[11]?' <span class="muted">'+esc(r[11])+'</span>':''}<span class="pm">${esc(tc(st(a[4])||'—'))} × ${esc(tc(st(a[6])||'—'))}</span></td><td data-l="Colocação">${r[6]?medal(r[6]):LAUS.has(r[12])?'<span class="muted">ausente</span>':'—'}</td><td class="r num" data-l="Nota">${nt?nt[0]:'—'}${nt&&nt[1]!=null?`<span class="jv" title="Colocação dada por cada jurado">${nt.slice(1,4).map(x=>x+'º').join(' · ')}</span>`:''}</td><td class="num" data-l="Idade">${ageStr(r[9])}</td><td class="r num" data-l="Peso">${kg(r[8])}</td><td class="r num" data-l="GPD">${gg?nf2.format(gg):'—'}</td><td class="full" data-l="Expositor">${esc(tc(st0(r[10])))}</td></tr>`}).join('')}
-    </tbody></table></div></div>`}).join('')}
+    </tbody></table></div>`}
+function lvFxBody(fx){const r0=fx.rows[0];const tk=sb=>{const o=LIVE.subs[r0[13]+'-'+sb];return o?tKey(o.t)||'0':''};const subs=fx.subs.slice().sort((a,b)=>tk(b).localeCompare(tk(a))||a.localeCompare(b));
+  return subs.map(sb=>{const g=fx.rows.filter(r=>(r[14]||'A')===sb);const key=r0[13]+'-'+sb;const o=LIVE.subs[key];const w=g.find(r=>r[6]===1);const se=g.some(seR);
+    return `<details class="subd" data-sb="${key}"><summary><span class="pill ${o?'N':'cat'}">${o?'Julgada':'Aguardando'}</span><b>Sub ${sb}</b><span class="status">${g.length} animais</span>${o&&o.t?`<span class="status">${esc(tShow(o.t))}</span>`:''}${se?'<span class="pill se">SE Agro</span>':''}${w?`<span class="muted fxwin">1º ${esc(A[w[1]][1])}</span>`:''}</summary><div class="sbody"></div></details>`}).join('')}
+document.addEventListener('toggle',e=>{const d=e.target;if(d.matches&&d.matches('details.subd')&&d.open){const b=d.querySelector('.sbody');if(b&&!b.innerHTML)b.innerHTML=lvSubTbl(d.dataset.sb)}},true);
 function lvFxDet(fx,open,pend){const g=fx.rows;const r0=g[0];const sx=A[r0[1]][2];const cat=S[r0[2]];const hasSE=g.some(seR);
   const stp=fx.done===fx.subs.length?'<span class="pill N">Julgada</span>':fx.done?`<span class="pill I">Parcial ${fx.done}/${fx.subs.length}</span>`:'<span class="pill cat">Aguardando</span>';
   const win=fx.subs.map(sb=>{const w=g.find(r=>(r[14]||'A')===sb&&r[6]===1);return w?`${fx.subs.length>1?sb+': ':''}${esc(A[w[1]][1])}`:''}).filter(Boolean).join(' · ');
@@ -1105,7 +1119,7 @@ function lvCampDet(k,o,open){const [sx,cat]=k.split('|');const nm=n=>{const x=(o
 function lvRecent(){const it=[];lvFx().forEach(x=>{if(x.done)it.push({tk:x.tk,o:1,h:op=>lvFxDet(x,op)})});
   Object.entries(LIVE.camp||{}).forEach(([k,o])=>{const sx=k.split('|')[0];if(ST.lv.sx!=='T'&&sx!==ST.lv.sx)return;it.push({tk:tKey(o.t),o:2,h:op=>lvCampDet(k,o,op)})});
   it.sort((a,b)=>b.tk.localeCompare(a.tk)||b.o-a.o);
-  return it.map((x,i)=>x.h(i===0)).join('')||'<p class="empty">Nenhum resultado ainda.</p>'}
+  return it.map(x=>x.h(false)).join('')||'<p class="empty">Nenhum resultado ainda.</p>'}
 function lvPend(){const gm=new Map();lvFx().filter(x=>!x.done).forEach(x=>{const r0=x.rows[0];const k=A[r0[1]][2]+'|'+S[r0[2]];if(!gm.has(k))gm.set(k,[]);gm.get(k).push(x)});
   return [...gm.entries()].map(([k,fs])=>{const [sx,cat]=k.split('|');const n=fs.reduce((a,x)=>a+x.rows.length,0);const ids=fs.reduce((a,x)=>a+x.subs.length,0);const a0=fs[0].rows[0],a1=fs[fs.length-1].rows[0];const hasSE=fs.some(x=>x.rows.some(seR));
     return `<details class="cls catg"><summary><span class="pill cat">Aguardando</span><b>${sx==='F'?'Fêmeas':'Machos'} · ${esc(tc(cat))}</b><span class="muted num">${a0[3]}–${a1[4]} m · ${fs.length} faixa${fs.length>1?'s':''} · ${ids} sub${ids>1?'s':''}</span><span class="status">${n} animais</span>${hasSE?'<span class="pill se">SE Agro</span>':''}</summary><div class="gbody">${fs.map(x=>lvFxDet(x,false,true)).join('')}</div></details>`}).join('')||'<p class="empty">Tudo julgado.</p>'}
