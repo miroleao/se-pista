@@ -214,6 +214,13 @@ td.nm .pm{display:block;font-size:.74rem;font-weight:400;color:var(--ink-60);mar
 td .jv{display:block;font-family:var(--f-mono);font-size:.7rem;color:var(--ink-60);white-space:nowrap;letter-spacing:.02em}
 @media (max-width:640px){table.cards td.nm .pm{font-size:.7rem}table.cards td .jv{font-size:.66rem}}
 </style>
+<style id="reorder">
+details.catg>.gbody{padding:0 0 10px 18px}
+details.cls>summary .muted.num{font-size:.8rem}
+details.catg>.gbody details.cls:first-child{border-top:0}
+details.cpd .body ol.clist{background:var(--paper-2);border-radius:8px;padding:10px 12px}
+@media (max-width:640px){details.catg>.gbody{padding-left:8px}}
+</style>
 <style id="compact-cards">
 /* cartões compactos no celular: selo no canto, números numa linha só */
 @media (max-width:640px){
@@ -348,6 +355,27 @@ function rankPanelCalc(){const {ex,cr}=rankRows();
   return `<div class="panel" id="rkPanel"><div class="head" style="margin-bottom:10px"><div><h3>Ranking parcial · expositores e criadores</h3><p class="note">Calculado com os resultados já divulgados, pela tabela de pontos dos julgamentos ACNB: classe 1º 28 · 2º 24 · 3º 20 · 4º 16 · 5º 12 · 6º 8 · 7º 6 · 8º 5 · 9º 4 · 10º 3 · 11º 2 · 12º 1; campeã(o) 60, reservada(o) 40, 3º prêmio 32; grande campeonato 100, 80 e 65. Cada animal soma só o maior prêmio. Ainda não entram as progênies, nem o índice da exposição e o filtro de sócios em dia. Toque num nome para ver os animais.</p></div></div>
   <div class="grid2">${rankTable(ex,'x','Expositores')}${rankTable(cr,'c','Criadores')}</div></div>`}
 const RX=r=>S[r[7]].replace(/[\s.]+$/,''),RC=r=>(A[r[0]][8]||'').replace(/[\s.]+$/,'');
+const tKey=t=>{const m=/(\d+)\/(\d+)\s+(\d+):(\d+)/.exec(t||'');return m?m[2].padStart(2,'0')+m[1].padStart(2,'0')+m[3].padStart(2,'0')+m[4]:''};
+const tShow=t=>{const m=/(\d+\/\d+)\s+(\d+:\d+)/.exec(t||'');return m?m[1]+' · '+m[2]:''};
+function fxAll(){const grp=new Map();K.forEach(r=>{const k=subKey(r);if(!grp.has(k))grp.set(k,[]);grp.get(k).push(r)});
+  const keys=[...grp.keys()].sort((a,b)=>{const [sa,la]=a.split('-'),[sb,lb]=b.split('-');return (+sa)-(+sb)||la.localeCompare(lb)});
+  const fxm=new Map();keys.forEach(k=>{const g=grp.get(k);const seq=g[0][10];if(!fxm.has(seq))fxm.set(seq,{seq,rows:[],subs:[],done:0,tk:'',t:''});const f=fxm.get(seq);f.rows.push(...g);f.subs.push(g[0][4]);const o=LIVE.subs[k];if(o){f.done++;const tk=tKey(o.t);if(tk>f.tk){f.tk=tk;f.t=o.t}}});
+  return [...fxm.values()].filter(f=>ST.sx==='T'||A[f.rows[0][0]][2]===ST.sx)}
+function fxBody(seq){const g=K.filter(r=>r[10]===seq);const tk=sb=>{const o=LIVE.subs[seq+'-'+sb];return o?tKey(o.t)||'0':''};const subs=[...new Set(g.map(r=>r[4]))].sort((a,b)=>tk(b).localeCompare(tk(a))||a.localeCompare(b));return subs.map(sb=>{const gg=g.filter(r=>r[4]===sb);const ok=!!LIVE.subs[seq+'-'+sb];return `<div class="stack" style="gap:6px;margin-bottom:12px"><p class="eyebrow">Sub ${sb} · ${ok?'julgada':'aguardando'} · ${gg.length} animais</p>${subTable(gg,ok,null)}</div>`}).join('')}
+function fxDet(fx,open,pend){const g=fx.rows;const r0=g[0];const sx=A[r0[0]][2];const cat=S[r0[1]];
+  const st=fx.done===fx.subs.length?'<span class="pill N">Julgada</span>':fx.done?`<span class="pill I">Parcial ${fx.done}/${fx.subs.length}</span>`:'<span class="pill cat">Aguardando</span>';
+  const win=fx.subs.map(s=>{const w=g.find(r=>r[4]===s&&POS.get(r[9])===1);return w?`${fx.subs.length>1?s+': ':''}${esc(A[w[0]][1])}`:''}).filter(Boolean).join(' · ');
+  return `<details class="cls" data-fx="${fx.seq}"${open?' open':''}><summary>${st}<b>${pend?'':(sx==='F'?'Fêmeas · ':'Machos · ')}${esc(tc(cat))} ${r0[2]}–${r0[3]} m</b><span class="muted num">${fx.subs.length>1?fx.subs.length+' subs ('+fx.subs.join(', ')+')':'sub única'}</span><span class="status">${g.length} animais</span>${fx.t?`<span class="status">${esc(tShow(fx.t))}</span>`:''}${win?`<span class="muted fxwin">1º ${win}</span>`:''}</summary><div class="body" style="margin-bottom:10px">${open?fxBody(fx.seq):''}</div></details>`}
+function campTitle(sx,cat){return cat==='GRANDE'?(sx==='F'?'Grande Campeonato Fêmeas':'Grande Campeonato Machos'):'Campeonato '+(sx==='F'?'Fêmeas · ':'Machos · ')+tc(cat)}
+function campDet(k,o,open){const [sx,cat]=k.split('|');const nm=n=>{const x=(o.l||[]).find(y=>y[0]===n);const r=x&&BYCT.get(x[1]);return r?esc(A[r[0]][1]):'—'};
+  return `<details class="cls cpd"${open?' open':''}><summary><span class="pill N">Campeonato</span><b>${esc(campTitle(sx,cat))}</b>${o.t?`<span class="status">${esc(tShow(o.t))}</span>`:''}<span class="muted fxwin">Campeã(o) ${nm(1)} · Res. ${nm(2)} · 3º ${nm(3)}</span></summary><div class="body" style="margin:4px 0 12px">${clList(o)}</div></details>`}
+function recentSec(){const it=[];fxAll().forEach(f=>{if(f.done)it.push({tk:f.tk,o:1,h:o=>fxDet(f,o)})});
+  Object.entries(LIVE.camp||{}).forEach(([k,o])=>{const sx=k.split('|')[0];if(ST.sx!=='T'&&sx!==ST.sx)return;it.push({tk:tKey(o.t),o:2,h:op=>campDet(k,o,op)})});
+  it.sort((a,b)=>b.tk.localeCompare(a.tk)||b.o-a.o);
+  return it.map((x,i)=>x.h(i===0)).join('')||'<p class="empty">Nenhum resultado ainda.</p>'}
+function pendSec(){const gm=new Map();fxAll().filter(f=>!f.done).forEach(f=>{const r0=f.rows[0];const k=A[r0[0]][2]+'|'+S[r0[1]];if(!gm.has(k))gm.set(k,[]);gm.get(k).push(f)});
+  return [...gm.entries()].map(([k,fs])=>{const [sx,cat]=k.split('|');const n=fs.reduce((a,f)=>a+f.rows.length,0);const ids=fs.reduce((a,f)=>a+f.subs.length,0);const a0=fs[0].rows[0],a1=fs[fs.length-1].rows[0];
+    return `<details class="cls catg"><summary><span class="pill cat">Aguardando</span><b>${sx==='F'?'Fêmeas':'Machos'} · ${esc(tc(cat))}</b><span class="muted num">${a0[2]}–${a1[3]} m · ${fs.length} faixa${fs.length>1?'s':''} · ${ids} sub${ids>1?'s':''}</span><span class="status">${n} animais</span></summary><div class="gbody">${fs.map(f=>fxDet(f,false,true)).join('')}</div></details>`}).join('')||'<p class="empty">Tudo julgado.</p>'}
 function view(){
   const grp=new Map();K.forEach(r=>{const k=subKey(r);if(!grp.has(k))grp.set(k,[]);grp.get(k).push(r)});
   const keys=[...grp.keys()].sort((a,b)=>{const [sa,la]=a.split('-'),[sb,lb]=b.split('-');return (+sa)-(+sb)||la.localeCompare(lb)});
@@ -363,23 +391,20 @@ function view(){
     <div class="kpi"><div class="v num" style="font-size:1.2rem">${esc(LIVE.upd||'—')}</div><div class="k">Última atualização</div></div></div>
   <div class="searchbar"><input type="search" id="q" inputmode="search" placeholder="Nº do catálogo, animal, RGD, expositor ou criador" value="${esc(ST.q)}" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search" aria-label="Buscar animal"></div>
   <div id="res" class="stack">${search(ST.q)}</div>
-  ${camps.length?`<div class="panel"><h3 style="margin-bottom:10px">Campeonatos divulgados</h3><div class="tw"><table class="cards"><thead><tr><th>Campeonato</th><th>Campeã(o)</th><th>Reservada(o)</th><th>3º prêmio</th></tr></thead><tbody>
-    ${camps.map(([k,o])=>{const [sx,cat]=k.split('|');const l=n=>{const x=(o.l||[]).find(y=>y[0]===n);const r=x&&BYCT.get(x[1]);return r?`<button class="link" data-ct="${r[9]}"><span class="num muted">${r[9]}</span> ${esc(A[r[0]][1])}</button><span class="sub">${esc(tc(S[r[7]]))} · ${nf0.format(r[5])} kg</span>`:'—'};const op=CKO.has(k);const nf=(o.cl||o.l||[]).length;return `<tr><td class="nm full"><button class="link camptg" data-ck="${esc(k)}" aria-expanded="${op}">${cat==='GRANDE'?(sx==='F'?'Grande Campeonato Fêmeas':'Grande Campeonato Machos'):(sx==='F'?'Fêmeas · ':'Machos · ')+esc(tc(cat))}</button><span class="sub">${op?'– fechar':'+ classificação completa'}${nf>3?' · '+nf+' animais':''}</span></td><td data-l="Campeã(o)">${l(1)}</td><td data-l="Reservada(o)">${l(2)}</td><td data-l="3º prêmio">${l(3)}</td></tr><tr class="cldet" data-ck="${esc(k)}"${op?'':' hidden'}><td class="full" colspan="4">${clList(o)}</td></tr>`}).join('')}</tbody></table></div></div>`:''}
+  <div class="stack"><div class="head"><h3>Últimos resultados</h3><div class="ctl">
+    <div class="seg" id="fS">${[['T','Todos'],['F','Fêmeas'],['M','Machos']].map(([k,l])=>`<button data-k="${k}" aria-pressed="${ST.sx===k}">${l}</button>`).join('')}</div></div></div>
+  <p class="note" style="margin-top:-4px">Do mais recente para o mais antigo. Toque para abrir.</p>
+  <div>${recentSec()}</div></div>
+  <div class="stack"><div class="head"><h3>Aguardando julgamento</h3></div>
+  <p class="note" style="margin-top:-4px">Agrupado por categoria. Toque para ver as faixas e os inscritos.</p>
+  <div>${pendSec()}</div></div>
   ${rankPanel()}
-  <div class="stack"><div class="head"><h3>Subcategorias</h3><div class="ctl">
-    <div class="seg" id="fS">${[['T','Todas'],['F','Fêmeas'],['M','Machos']].map(([k,l])=>`<button data-k="${k}" aria-pressed="${ST.sx===k}">${l}</button>`).join('')}</div>
-    <div class="seg" id="fT">${[['all','Todas'],['ok','Julgadas'],['wait','Aguardando']].map(([k,l])=>`<button data-k="${k}" aria-pressed="${ST.st===k}">${l}</button>`).join('')}</div></div></div>
-  <div>${(()=>{let lastCat='';return faixas.map(fx=>{const g=fx.rows;const r0=g[0];const sx=A[r0[0]][2];const cat=S[r0[1]];const ck=sx+'|'+cat;
-    let hd='';if(ck!==lastCat){lastCat=ck;const cp=(LIVE.camp||{})[ck];hd=`<p class="eyebrow fxcat">${sx==='F'?'Fêmeas':'Machos'} · ${esc(tc(cat))}${cp?' · campeonato divulgado':''}</p>`}
-    const st=fx.done===fx.subs.length?'<span class="pill N">Julgada</span>':fx.done?`<span class="pill I">Parcial ${fx.done}/${fx.subs.length}</span>`:'<span class="pill cat">Aguardando</span>';
-    const win=fx.subs.map(s=>{const w=g.find(r=>r[4]===s&&POS.get(r[9])===1);return w?`${fx.subs.length>1?s+': ':''}${esc(A[w[0]][1])}`:''}).filter(Boolean).join(' · ');
-    return hd+`<details class="cls" data-fx="${fx.seq}"><summary>${st}<b>${esc(tc(cat))} ${r0[2]}–${r0[3]} m</b><span class="muted num">${sx} · ${fx.subs.length>1?fx.subs.length+' subs ('+fx.subs.join(', ')+')':'sub única'}</span><span class="status">${g.length} animais</span>${win?`<span class="muted fxwin">1º ${win}</span>`:''}</summary><div class="body" style="margin-bottom:10px"></div></details>`}).join('')})()||'<p class="empty">Nenhuma subcategoria com esse filtro.</p>'}</div></div>
   <p class="note">Fonte: catálogo de conferência e PDFs de resultado da organizadora (sistema JulgamentoACNB). Peso comparado com a mediana das exposições nacionais de 2024 em diante na mesma faixa de idade. Os resultados podem conter erros de digitação da fonte; o oficial é o da ACNB.</p>`}
 function render(){$('#main').innerHTML=`<section class="view">${view()}</section>`;bind()}
 function openCt(ct){ST.q=String(ct);$('#q').value=ST.q;$('#res').innerHTML=search(ST.q);const y=$('#res').getBoundingClientRect().top+scrollY-(document.querySelector('.top').offsetHeight+80);scrollTo({top:Math.max(0,y),behavior:'smooth'})}
 function bind(){const q=$('#q');q.oninput=()=>{ST.q=q.value;clearTimeout(q._t);q._t=setTimeout(()=>{$('#res').innerHTML=search(ST.q)},150)};q.onkeydown=e=>{if(e.key==='Enter')q.blur()};
-  const seg=(id,k)=>$(id).onclick=e=>{const x=e.target.closest('button');if(x){ST[k]=x.dataset.k;const y=scrollY;render();scrollTo({top:y})}};seg('#fS','sx');seg('#fT','st');
-  document.querySelectorAll('details.cls').forEach(d=>d.addEventListener('toggle',()=>{if(d.open){const b=d.querySelector('.body');if(!b.innerHTML){const seq=+d.dataset.fx;const g=K.filter(r=>r[10]===seq);const subs=[...new Set(g.map(r=>r[4]))].sort();b.innerHTML=subs.map(sb=>{const gg=g.filter(r=>r[4]===sb);const ok=!!LIVE.subs[seq+'-'+sb];return `<div class="stack" style="gap:6px;margin-bottom:12px"><p class="eyebrow">Sub ${sb} · ${ok?'julgada':'aguardando'} · ${gg.length} animais</p>${subTable(gg,ok,null)}</div>`}).join('')}}}))}
+  const seg=(id,k)=>$(id).onclick=e=>{const x=e.target.closest('button');if(x){ST[k]=x.dataset.k;const y=scrollY;render();scrollTo({top:y})}};seg('#fS','sx');
+  document.querySelectorAll('details.cls').forEach(d=>d.addEventListener('toggle',()=>{if(d.open&&d.dataset.fx){const b=d.querySelector('.body');if(!b.innerHTML){const seq=+d.dataset.fx;const g=K.filter(r=>r[10]===seq);const subs=[...new Set(g.map(r=>r[4]))].sort();b.innerHTML=subs.map(sb=>{const gg=g.filter(r=>r[4]===sb);const ok=!!LIVE.subs[seq+'-'+sb];return `<div class="stack" style="gap:6px;margin-bottom:12px"><p class="eyebrow">Sub ${sb} · ${ok?'julgada':'aguardando'} · ${gg.length} animais</p>${subTable(gg,ok,null)}</div>`}).join('')}}}))}
 document.addEventListener('click',e=>{const rq=e.target.closest('[data-rq]');if(rq){e.preventDefault();ST.q=rq.dataset.rq;$('#q').value=ST.q;$('#res').innerHTML=search(ST.q);const y=$('#res').getBoundingClientRect().top+scrollY-(document.querySelector('.top').offsetHeight+80);scrollTo({top:Math.max(0,y),behavior:'smooth'});return}const ro=e.target.closest('[data-rko]');if(ro){RKO[ro.dataset.rko]=!RKO[ro.dataset.rko];const y=scrollY;$('#rkPanel').outerHTML=rankPanel();scrollTo({top:y});return}const g=e.target.closest('.camptg');if(g){e.preventDefault();const k=g.dataset.ck;const op=!CKO.has(k);op?CKO.add(k):CKO.delete(k);const d=[...document.querySelectorAll('tr.cldet')].find(x=>x.dataset.ck===k);if(d)d.hidden=!op;g.setAttribute('aria-expanded',op);const sb=g.nextElementSibling;if(sb)sb.textContent=sb.textContent.replace(op?'+ classificação completa':'– fechar',op?'– fechar':'+ classificação completa');return}const t=e.target.closest('[data-ct]');if(t){e.preventDefault();openCt(+t.dataset.ct)}});
 const setHH=()=>{try{document.documentElement.style.setProperty('--hh',document.querySelector('.top').offsetHeight+'px')}catch(e){}};setHH();addEventListener('resize',setHH);
 render();
