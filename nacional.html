@@ -209,6 +209,11 @@ ol.clist .medal,table.cards ol.clist .medal{min-width:2.2em;height:1.6em;font-si
 .fxwin{margin-left:auto;font-size:.82rem}
 @media (max-width:640px){.fxwin{margin-left:0;flex-basis:100%;padding-left:1.6em}}
 </style>
+<style id="pm-jv">
+td.nm .pm{display:block;font-size:.74rem;font-weight:400;color:var(--ink-60);margin-top:1px;line-height:1.25}
+td .jv{display:block;font-family:var(--f-mono);font-size:.7rem;color:var(--ink-60);white-space:nowrap;letter-spacing:.02em}
+@media (max-width:640px){table.cards td.nm .pm{font-size:.7rem}table.cards td .jv{font-size:.66rem}}
+</style>
 <style id="compact-cards">
 /* cartões compactos no celular: selo no canto, números numa linha só */
 @media (max-width:640px){
@@ -295,8 +300,8 @@ function campBlock(sx,cat,title){const o=(LIVE.camp||{})[sx+'|'+cat];
   const l=n=>{const x=o&&(o.l||[]).find(y=>y[0]===n);const r=x&&BYCT.get(x[1]);return r?`<button class="link" data-ct="${r[9]}"><span class="num muted">${r[9]}</span> ${esc(A[r[0]][1])}</button><span class="sub">${esc(tc(S[r[7]]))} · ${nf0.format(r[5])} kg</span>`:'—'};
   return `<div class="panel alt"><h3 style="margin-bottom:8px">${title}</h3>${o?`<div class="ped"><b>Campeã(o)</b><span>${l(1)}</span><b>Reservada(o)</b><span>${l(2)}</span><b>3º prêmio</b><span>${l(3)}</span></div>`:'<p class="muted">Ainda não divulgado.</p>'}</div>`}
 function subTable(rows,ok,me){rows.sort((a,b)=>ok?((POS.get(a[9])||99)-(POS.get(b[9])||99)):a[9]-b[9]);
-  return `<div class="tw"><table class="cards"><thead><tr><th>Cat.</th><th>Animal</th><th>Colocação</th><th class="r">Nota</th><th>Idade</th><th class="r">Peso</th><th>Expositor</th></tr></thead><tbody>
-  ${rows.map(r=>{const a=A[r[0]];const p=POS.get(r[9]);const nt=NOTA.get(r[9]);return `<tr class="click ${r===me?'me':''}" data-ct="${r[9]}"><td class="num" data-l="Catálogo"><b>${r[9]}</b></td><td class="nm full">${esc(a[1])} <span class="rg">${esc(a[0])}</span>${r===me?' <span class="pill N">pesquisado</span>':''}</td><td data-l="Colocação">${p?medal(p):AUS.has(r[9])?'<span class="muted">ausente</span>':'—'}</td><td class="r num" data-l="Nota">${nt?nt[0]:'—'}</td><td class="num" data-l="Idade">${ageStr(r[6])}</td><td class="r num" data-l="Peso">${nf0.format(r[5])}</td><td class="full" data-l="Expositor">${esc(tc(S[r[7]]))}</td></tr>`}).join('')}</tbody></table></div>`}
+  return `<div class="tw"><table class="cards"><thead><tr><th>Cat.</th><th>Animal</th><th>Colocação</th><th class="r">Nota · jurados</th><th>Idade</th><th class="r">Peso</th><th>Expositor</th></tr></thead><tbody>
+  ${rows.map(r=>{const a=A[r[0]];const p=POS.get(r[9]);const nt=NOTA.get(r[9]);return `<tr class="click ${r===me?'me':''}" data-ct="${r[9]}"><td class="num" data-l="Catálogo"><b>${r[9]}</b></td><td class="nm full">${esc(a[1])} <span class="rg">${esc(a[0])}</span>${r===me?' <span class="pill N">pesquisado</span>':''}<span class="pm">${esc(tc(a[4]||'—'))} × ${esc(tc(a[5]||'—'))}</span></td><td data-l="Colocação">${p?medal(p):AUS.has(r[9])?'<span class="muted">ausente</span>':'—'}</td><td class="r num" data-l="Nota">${nt?nt[0]:'—'}${nt&&nt[1]!=null?`<span class="jv" title="Colocação dada por cada jurado">${nt.slice(1,4).map(x=>x+'º').join(' · ')}</span>`:''}</td><td class="num" data-l="Idade">${ageStr(r[6])}</td><td class="r num" data-l="Peso">${nf0.format(r[5])}</td><td class="full" data-l="Expositor">${esc(tc(S[r[7]]))}</td></tr>`}).join('')}</tbody></table></div>`}
 function context(r0){const sx=A[r0[0]][2],cat=S[r0[1]];const same=K.filter(r=>r[10]===r0[10]);const subs=[...new Set(same.map(r=>r[4]))].sort();
   return `<div class="stack"><h3>Mesma subcategoria · ${esc(tc(cat))} ${r0[2]}–${r0[3]} meses</h3>${subs.map(s=>{const g=same.filter(r=>r[4]===s);const ok=!!LIVE.subs[r0[10]+'-'+s];return `<div class="stack" style="gap:6px"><p class="eyebrow">Sub ${s} · ${ok?'julgada':'aguardando'} · ${g.length} animais</p>${subTable(g,ok,r0)}</div>`}).join('')}</div>
   <div class="grid2">${campBlock(sx,cat,'Campeonato '+esc(tc(cat)))}${campBlock(sx,'GRANDE',sx==='F'?'Grande Campeonato Fêmeas':'Grande Campeonato Machos')}</div>`}
