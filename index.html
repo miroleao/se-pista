@@ -446,7 +446,7 @@ function seBlock(seEv){
       <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline">${evLink(ei)} ${nivPill(e.nivel)}</div>
       <div class="facts"><div><b>Expositores</b><span class="num">${rk?rk[0]+'º de '+e.rk.length:'—'}</span></div><div><b>Pontos</b><span class="num">${rk?nf0.format(rk[4]):'—'}</span></div><div><b>Animais</b><span class="num">${rows.length}</span></div><div><b>Pódios (1º–3º)</b><span class="num">${top3}</span></div></div>
       ${outros.length?`<p class="note">No time de outros expositores: ${outros.map(r=>`${animalLink(r[1])} <span class="muted">(${esc(tc(st(r[10])))} · ${SEA.get(r[1]).rel==='sociedade'?'sociedade':'emprestada'}${r[6]?` · ${r[6]}º ${esc(tc(S[r[2]]))}`:' · inscrita, sem resultado'})</span>`).join('; ')}</p>`:''}
-      ${ch.length?`<div class="ctl">${ch.map(c=>`<span class="pill se">${esc(lvlName(S[c[2]],c[3],c[6]))}</span> ${animalLink(c[1])}`).join('<span class="muted">·</span>')}</div>`:''}
+      ${ch.length?`<div class="ctl">${ch.slice().sort((a,b)=>((S[b[2]]==='GRANDE')-(S[a[2]]==='GRANDE'))||a[3]-b[3]).map(c=>`<span>${ttlB(S[c[2]],c[3],lvlName(S[c[2]],c[3],c[6]))} ${animalLink(c[1])}</span>`).join('')}</div>`:''}
     </div>`}).join('');
 }
 function yearChart(sel,lsel,names,cols){
@@ -555,7 +555,7 @@ function evDetail(ei){
   <div>${keys.map(k=>{const g=grp.get(k).sort((a,b)=>a[6]-b[6]);const [cat,f0,f1,sub]=k.split('|');const sx=A[g[0][1]][2];const se=g.some(r=>seR(r));
     return `<details class="cls" ${se?'open':''}><summary><span class="pill cat">${sx==='F'?'Fêmeas':'Machos'}</span><b>${esc(tc(cat))}</b><span class="muted num">${f0}–${f1} meses${sub?' · '+sub:''}</span><span class="status">${g.length} animais</span>${se?'<span class="pill se">SE Agro</span>':''}<span class="muted" style="margin-left:auto">1º ${esc(A[g[0][1]][1])}</span></summary>
     <div class="tw" style="margin-bottom:10px"><table class="cards"><thead><tr><th>Animal</th><th>Idade</th><th class="r">Peso</th><th class="r">GPD</th><th>Pai × Mãe</th><th>Expositor</th></tr></thead><tbody>
-    ${g.map(r=>{const a=A[r[1]];const gg=gpd(r);return `<tr class="${seR(r)?'se':''}"><td class="full row1">${medal(r[6])} <span class="nm">${animalLink(r[1])}</span> <span class="rg">${esc(a[0])}</span>${seTag(r[1],r[10])}${r[11]?' <span class="muted">'+esc(r[11])+'</span>':''}</td><td class="num" data-l="Idade">${ageStr(r[9])}</td><td class="r num" data-l="Peso">${kg(r[8])}</td><td class="r num" data-l="GPD">${gg?nf2.format(gg):'—'}</td><td class="full" data-l="Pai × Mãe">${esc(tc(st(a[4])))}<span class="sub">${esc(tc(st(a[6])))}</span></td><td class="full" data-l="Expositor">${esc(tc(st(r[10])))}</td></tr>`}).join('')}
+    ${g.map(r=>{const a=A[r[1]];const gg=gpd(r);const tcs=chs.filter(c=>c[1]===r[1]);return `<tr class="${seR(r)?'se':''} ${tcs.length?'ttlrow':''}"><td class="full row1">${medal(r[6])} <span class="nm">${animalLink(r[1])}</span> <span class="rg">${esc(a[0])}</span>${seTag(r[1],r[10])}${r[11]?' <span class="muted">'+esc(r[11])+'</span>':''}${ttlsOf(tcs)}</td><td class="num" data-l="Idade">${ageStr(r[9])}</td><td class="r num" data-l="Peso">${kg(r[8])}</td><td class="r num" data-l="GPD">${gg?nf2.format(gg):'—'}</td><td class="full" data-l="Pai × Mãe">${esc(tc(st(a[4])))}<span class="sub">${esc(tc(st(a[6])))}</span></td><td class="full" data-l="Expositor">${esc(tc(st(r[10])))}</td></tr>`}).join('')}
     </tbody></table></div></details>`}).join('')}</div></div>`;
 }
 const afterEv=()=>{const b=$('#back');if(b)b.onclick=()=>go('expos',{ev:null})};
