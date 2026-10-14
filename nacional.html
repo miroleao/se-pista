@@ -273,6 +273,20 @@ tr.ttlrow td{background:color-mix(in srgb,var(--tag) 13%,transparent)}
   .lc .ct{font-size:1.3rem;padding:6px 7px 5px}
 }
 </style>
+<style id="fav">
+/* #fav */
+.fav{float:right;background:none;border:0;padding:0 2px 0 10px;margin:-2px 0 0;font-size:1.3rem;line-height:1;color:var(--ink-40);cursor:pointer;font-family:inherit}
+.fav.on{color:var(--tag)}
+.fav:focus-visible{outline:2px solid var(--tag);outline-offset:2px;border-radius:4px}
+.clist li{grid-template-columns:auto 1fr auto}
+.clist li .fav{grid-column:3;grid-row:1;float:none}
+.lc .ln1 .fav{margin-left:6px}
+details.favbox{border:1px solid color-mix(in srgb,var(--tag) 45%,var(--rule));border-radius:10px;padding:0 10px;background:color-mix(in srgb,var(--tag) 6%,var(--paper))}
+details.favbox>summary{padding:9px 2px}
+.favh{font-weight:600}
+details.favbox>summary .favh{color:var(--ink)}
+.favnone{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:.86rem;padding:8px 10px;border:1px dashed var(--rule);border-radius:10px}
+</style>
 
 <header class="top">
   <div class="wrap">
@@ -310,16 +324,27 @@ const subKey=r=>r[10]+'-'+r[4];
 const titleOf=(cat,l,sx)=>{const f=sx==='F';if(cat==='GRANDE')return l===1?(f?'Grande Campeã':'Grande Campeão'):l===2?(f?'Res. Grande Campeã':'Res. Grande Campeão'):(f?'3ª Grande Campeã':'3º Grande Campeão');return (l===1?(f?'Campeã ':'Campeão '):l===2?(f?'Res. Campeã ':'Res. Campeão '):'3º Prêmio ')+tc(cat)};
 const CKO=new Set();
 function clList(o){const rows=(o.cl&&o.cl.length?o.cl:(o.l||[]));if(!rows.length)return '<p class="muted">Ainda não divulgado.</p>';
-  return `<ol class="clist">${rows.map(([n,c])=>{const r=BYCT.get(c);return `<li>${medal(n)}${r?`<button class="link" data-ct="${r[9]}"><span class="num muted">${r[9]}</span> <b>${esc(A[r[0]][1])}</b></button><span class="sub">${esc(tc(A[r[0]][4]||'—'))} × ${esc(tc(A[r[0]][5]||'—'))}</span><span class="sub">${esc(tc(S[r[7]]))} · ${nf0.format(r[5])} kg</span>`:`<span class="num">${c}</span>`}</li>`}).join('')}</ol>`}
+  return `<ol class="clist">${rows.map(([n,c])=>{const r=BYCT.get(c);return `<li>${medal(n)}${r?`<button class="link" data-ct="${r[9]}"><span class="num muted">${r[9]}</span> <b>${esc(A[r[0]][1])}</b></button><span class="sub">${esc(tc(A[r[0]][4]||'—'))} × ${esc(tc(A[r[0]][5]||'—'))}</span>${star(r[9])}<span class="sub">${esc(tc(S[r[7]]))} · ${nf0.format(r[5])} kg</span>`:`<span class="num">${c}</span>`}</li>`}).join('')}</ol>`}
 const ttlSort=(a,b)=>((b[0]==='GRANDE')-(a[0]==='GRANDE'))||a[1]-b[1];
 function ttlB(cat,l,lab){return `<span class="ttl t${l}${cat==='GRANDE'?' gr':''}">${cat==='GRANDE'?'★ ':''}${esc(lab)}</span>`}
 function liveTT(ct){const o=[];for(const [k,v] of Object.entries(LIVE.camp||{})){const [sx,cat]=k.split('|');(v.l||[]).forEach(([l,c])=>{if(c===ct&&l<=3)o.push([cat,l,sx])})}o.sort(ttlSort);return o.length?`<span class="ttls">${o.map(([cat,l,sx])=>ttlB(cat,l,titleOf(cat,l,sx))).join('')}</span>`:''}
 function liveTitles(ct){const out=[];for(const [k,o] of Object.entries(LIVE.camp||{})){const [sx,cat]=k.split('|');(o.l||[]).forEach(([l,c])=>{if(c===ct&&l<=3)out.push(titleOf(cat,l,sx))})}return out}
 const ST={q:'',sx:'T',st:'all'};
+// favoritos: guardados só neste aparelho/navegador (localStorage), pelo nº do catálogo
+const FKEY='se-fav-nac26';let FAV=new Set(),FOPEN=false;try{FAV=new Set(JSON.parse(localStorage.getItem(FKEY)||'[]').map(Number).filter(Boolean))}catch(e){}
+const favSave=()=>{try{localStorage.setItem(FKEY,JSON.stringify([...FAV]))}catch(e){}};
+const star=ct=>{const on=FAV.has(ct);return `<button type="button" class="fav${on?' on':''}" data-fav="${ct}" aria-pressed="${on}" title="${on?'Remover dos favoritos':'Favoritar'}">${on?'★':'☆'}</button>`};
+const favRows=()=>K.filter(r=>FAV.has(r[9]));
+function favSec(){const rows=favRows();if(!rows.length)return `<div class="favnone"><span class="favh">☆ Favoritos</span><span class="muted">Toque na estrela ☆ ao lado de um animal para acompanhá-lo aqui.</span></div>`;
+  const jul=rows.filter(r=>POS.has(r[9])).length;
+  return `<details class="cls favbox"${FOPEN?' open':''}><summary><span class="favh">★ Favoritos</span><span class="status">${rows.length} ${rows.length===1?'animal':'animais'} · ${jul} já ${jul===1?'julgado':'julgados'}</span></summary><div class="body">${listTable(rows,'x')}</div></details>`}
+function favRefresh(ct){const on=FAV.has(ct);document.querySelectorAll(`[data-fav="${ct}"]`).forEach(x=>{x.classList.toggle('on',on);x.textContent=on?'★':'☆';x.setAttribute('aria-pressed',on);x.title=on?'Remover dos favoritos':'Favoritar'});const s=document.getElementById('favSec');if(s)s.innerHTML=favSec()}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-fav]');if(!b)return;e.preventDefault();e.stopPropagation();const ct=+b.dataset.fav;FAV.has(ct)?FAV.delete(ct):FAV.add(ct);favSave();favRefresh(ct)},true);
+document.addEventListener('toggle',e=>{if(e.target.classList&&e.target.classList.contains('favbox'))FOPEN=e.target.open},true);
 function status(r){const p=POS.get(r[9]);return p?`${medal(p)} <b class="num">de ${NC.get(r[9])}</b>`:AUS.has(r[9])?'<span class="pill est">ausente</span>':LIVE.subs[subKey(r)]?'<span class="pill est">sem colocação</span>':'<span class="pill cat">aguardando julgamento</span>'}
 function card(r){const a=A[r[0]];const md=REF[a[2]+ageBin(r[6])];const nt=NOTA.get(r[9]);const tl=liveTitles(r[9]);
   return `<div class="lc"><div class="ct num">${r[9]}</div><div class="stack" style="gap:4px;min-width:0">
-    <div class="ln1">${esc(a[1])} <span class="rg">${esc(a[0])}</span>${r[8]?' <span class="muted">'+esc(r[8])+'</span>':''}</div>
+    <div class="ln1">${star(r[9])}${esc(a[1])} <span class="rg">${esc(a[0])}</span>${r[8]?' <span class="muted">'+esc(r[8])+'</span>':''}</div>
     <div class="muted" style="font-size:.84rem">${a[2]==='F'?'Fêmea':'Macho'} · ${esc(tc(S[r[1]]))} ${r[2]}–${r[3]} m · Sub ${r[4]} · ${ageStr(r[6])} · nasc. ${fmtD(a[3])}</div>
     <div style="font-size:.86rem"><b class="num">${nf0.format(r[5])} kg</b>${md?` <span class="${r[5]>=md?'delta-up':'delta-dn'} num">${r[5]>=md?'+':'−'}${nf0.format(Math.abs(r[5]-md))}</span> <span class="muted">vs mediana nacional</span>`:''} · ${esc(tc(S[r[7]]))}</div>
     <div class="muted" style="font-size:.82rem">${esc(tc(a[4]))} × ${esc(tc(a[5]))}${a[6]?' · avô materno '+esc(tc(a[6])):''}${a[7]?' · avó materna '+esc(tc(a[7])):''}</div>
@@ -335,14 +360,15 @@ function campBlock(sx,cat,title){const o=(LIVE.camp||{})[sx+'|'+cat];
   return `<div class="panel alt"><h3 style="margin-bottom:8px">${title}</h3>${o?`<div class="ped"><b>Campeã(o)</b><span>${l(1)}</span><b>Reservada(o)</b><span>${l(2)}</span><b>3º prêmio</b><span>${l(3)}</span></div>`:'<p class="muted">Ainda não divulgado.</p>'}</div>`}
 function subTable(rows,ok,me){rows.sort((a,b)=>ok?((POS.get(a[9])||99)-(POS.get(b[9])||99)):a[9]-b[9]);
   return `<div class="tw"><table class="cards"><thead><tr><th>Cat.</th><th>Animal</th><th>Colocação</th><th class="r">Nota · jurados</th><th>Idade</th><th class="r">Peso</th><th>Expositor</th></tr></thead><tbody>
-  ${rows.map(r=>{const a=A[r[0]];const p=POS.get(r[9]);const nt=NOTA.get(r[9]);const tt=liveTT(r[9]);return `<tr class="click ${r===me?'me':''} ${tt?'ttlrow':''}" data-ct="${r[9]}"><td class="num" data-l="Catálogo"><b>${r[9]}</b></td><td class="nm full">${esc(a[1])} <span class="rg">${esc(a[0])}</span>${r===me?' <span class="pill N">pesquisado</span>':''}${tt}<span class="pm">${esc(tc(a[4]||'—'))} × ${esc(tc(a[5]||'—'))}</span></td><td data-l="Colocação">${p?medal(p):AUS.has(r[9])?'<span class="muted">ausente</span>':'—'}</td><td class="r num" data-l="Nota">${nt?nt[0]:'—'}${nt&&nt[1]!=null?`<span class="jv" title="Colocação dada por cada jurado">${nt.slice(1,4).map(x=>x+'º').join(' · ')}</span>`:''}</td><td class="num" data-l="Idade">${ageStr(r[6])}</td><td class="r num" data-l="Peso">${nf0.format(r[5])}</td><td class="full" data-l="Expositor">${esc(tc(S[r[7]]))}</td></tr>`}).join('')}</tbody></table></div>`}
+  ${rows.map(r=>{const a=A[r[0]];const p=POS.get(r[9]);const nt=NOTA.get(r[9]);const tt=liveTT(r[9]);return `<tr class="click ${r===me?'me':''} ${tt?'ttlrow':''}" data-ct="${r[9]}"><td class="num" data-l="Catálogo"><b>${r[9]}</b></td><td class="nm full">${star(r[9])}${esc(a[1])} <span class="rg">${esc(a[0])}</span>${r===me?' <span class="pill N">pesquisado</span>':''}${tt}<span class="pm">${esc(tc(a[4]||'—'))} × ${esc(tc(a[5]||'—'))}</span></td><td data-l="Colocação">${p?medal(p):AUS.has(r[9])?'<span class="muted">ausente</span>':'—'}</td><td class="r num" data-l="Nota">${nt?nt[0]:'—'}${nt&&nt[1]!=null?`<span class="jv" title="Colocação dada por cada jurado">${nt.slice(1,4).map(x=>x+'º').join(' · ')}</span>`:''}</td><td class="num" data-l="Idade">${ageStr(r[6])}</td><td class="r num" data-l="Peso">${nf0.format(r[5])}</td><td class="full" data-l="Expositor">${esc(tc(S[r[7]]))}</td></tr>`}).join('')}</tbody></table></div>`}
 function context(r0){const sx=A[r0[0]][2],cat=S[r0[1]];const same=K.filter(r=>r[10]===r0[10]);const subs=[...new Set(same.map(r=>r[4]))].sort();
   return `<div class="stack"><h3>Mesma subcategoria · ${esc(tc(cat))} ${r0[2]}–${r0[3]} meses</h3>${subs.map(s=>{const g=same.filter(r=>r[4]===s);const ok=!!LIVE.subs[r0[10]+'-'+s];return `<div class="stack" style="gap:6px"><p class="eyebrow">Sub ${s} · ${ok?'julgada':'aguardando'} · ${g.length} animais</p>${subTable(g,ok,r0)}</div>`}).join('')}</div>
   <div class="grid2">${campBlock(sx,cat,'Campeonato '+esc(tc(cat)))}${campBlock(sx,'GRANDE',sx==='F'?'Grande Campeonato Fêmeas':'Grande Campeonato Machos')}</div>`}
 function listTable(rows,showX){rows=rows.slice().sort((a,b)=>a[9]-b[9]);
   return `<div class="tw"><table class="cards"><thead><tr><th>Cat.</th><th>Animal</th><th>Classe</th><th>Colocação</th><th class="r">Peso</th><th>${showX==='c'?'Criador':'Expositor'}</th></tr></thead><tbody>
-  ${rows.map(r=>{const a=A[r[0]];const p=POS.get(r[9]);const tl=liveTitles(r[9]);return `<tr class="click ${tl.length?'ttlrow':''}" data-ct="${r[9]}"><td class="num" data-l="Catálogo"><b>${r[9]}</b></td><td class="nm full">${esc(a[1])} <span class="rg">${esc(a[0])}</span>${liveTT(r[9])}<span class="pm">${esc(tc(a[4]||'—'))} × ${esc(tc(a[5]||'—'))}</span></td><td data-l="Classe">${esc(tc(S[r[1]]))}<span class="sub">${r[2]}–${r[3]} m · Sub ${r[4]}</span></td><td data-l="Colocação">${p?`${medal(p)} <span class="muted num">de ${NC.get(r[9])}</span>`:AUS.has(r[9])?'<span class="muted">ausente</span>':'<span class="muted">aguardando</span>'}</td><td class="r num" data-l="Peso">${nf0.format(r[5])}</td><td class="full" data-l="${showX==='c'?'Criador':'Expositor'}">${esc(tc(showX==='c'?a[8]:S[r[7]]))}</td></tr>`}).join('')}</tbody></table></div>`}
+  ${rows.map(r=>{const a=A[r[0]];const p=POS.get(r[9]);const tl=liveTitles(r[9]);return `<tr class="click ${tl.length?'ttlrow':''}" data-ct="${r[9]}"><td class="num" data-l="Catálogo"><b>${r[9]}</b></td><td class="nm full">${star(r[9])}${esc(a[1])} <span class="rg">${esc(a[0])}</span>${liveTT(r[9])}<span class="pm">${esc(tc(a[4]||'—'))} × ${esc(tc(a[5]||'—'))}</span></td><td data-l="Classe">${esc(tc(S[r[1]]))}<span class="sub">${r[2]}–${r[3]} m · Sub ${r[4]}</span></td><td data-l="Colocação">${p?`${medal(p)} <span class="muted num">de ${NC.get(r[9])}</span>`:AUS.has(r[9])?'<span class="muted">ausente</span>':'<span class="muted">aguardando</span>'}</td><td class="r num" data-l="Peso">${nf0.format(r[5])}</td><td class="full" data-l="${showX==='c'?'Criador':'Expositor'}">${esc(tc(showX==='c'?a[8]:S[r[7]]))}</td></tr>`}).join('')}</tbody></table></div>`}
 function search(q){const t=String(q||'').trim();if(!t)return '';
+  if(/^(★|☆|\*|fav|favs|favorit[oa]s?)$/i.test(t)){const fr=favRows();return fr.length?`<div class="stack" style="gap:6px"><h3>★ Favoritos · ${fr.length}</h3>${listTable(fr,'x')}</div>`:'<p class="empty">Nenhum favorito ainda. Toque na estrela ☆ ao lado de um animal.</p>'}
   if(/^\d+$/.test(t)){const r=BYCT.get(+t);return r?card(r)+history(r[0])+context(r):'<p class="empty">Nenhum animal com esse número no catálogo.</p>'}
   const k=keyN(t);if(k.length<2)return '';
   const nh=K.filter(r=>keyN(A[r[0]][1]).includes(k)||keyN(A[r[0]][0]).includes(k));const ns=new Set(nh);
@@ -419,8 +445,9 @@ function view(){
     <div class="kpi"><div class="v num">${camps.length}<span style="font-size:.5em;color:var(--ink-60)"> / ${cats.size+2}</span></div><div class="k">Campeonatos divulgados</div></div>
     <div class="kpi"><div class="v num">${K.length}</div><div class="k">Inscritos</div><div class="s">${EV.nf} fêmeas · ${EV.nm} machos</div></div>
     <div class="kpi"><div class="v num" style="font-size:1.2rem">${esc(LIVE.upd||'—')}</div><div class="k">Última atualização</div></div></div>
-  <div class="searchbar"><input type="search" id="q" inputmode="search" placeholder="Nº do catálogo, animal, RGD, expositor ou criador" value="${esc(ST.q)}" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search" aria-label="Buscar animal"></div>
+  <div class="searchbar"><input type="search" id="q" inputmode="search" placeholder="Nº do catálogo, animal, RGD, expositor, criador ou ★" value="${esc(ST.q)}" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search" aria-label="Buscar animal"></div>
   <div id="res" class="stack">${search(ST.q)}</div>
+  <div id="favSec">${favSec()}</div>
   <div class="stack"><div class="head"><h3>Últimos resultados</h3><div class="ctl">
     <div class="seg" id="fS">${[['T','Todos'],['F','Fêmeas'],['M','Machos']].map(([k,l])=>`<button data-k="${k}" aria-pressed="${ST.sx===k}">${l}</button>`).join('')}</div></div></div>
   <p class="note" style="margin-top:-4px">Do mais recente para o mais antigo. Toque para abrir.</p>
