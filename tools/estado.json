@@ -2,6 +2,7 @@
 "v": {
 "c-F-BEZERRA-MAIOR": 1,
 "c-F-BEZERRA-MENOR": 2,
+"c-F-NOVILHA": 1,
 "c-F-NOVILHA-MENOR": 1,
 "rk": 1,
 "s-1-A": 1,
@@ -17,6 +18,8 @@
 "s-13-B": 1,
 "s-14-A": 1,
 "s-14-B": 1,
+"s-15-A": 1,
+"s-15-B": 1,
 "s-2-A": 1,
 "s-2-B": 1,
 "s-2-C": 1,
@@ -41,6 +44,6 @@
 "s-8-B": 1,
 "s-9-A": 1,
 "s-9-B": 1,
-"status": 34
+"status": 35
 }
 }
