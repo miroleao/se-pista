@@ -74,6 +74,7 @@ for pdf in pdfs:
         kind = 2 if 'RESERV' in up else 3 if ('PREMIO' in up or 'TERCEIR' in up) else 1
         sx = 'M' if re.search(r'Sexo:\s*Macho', t) else 'F'
         cat = 'GRANDE' if 'GRANDE' in up else re.sub(r'^(Grande\s+)?(Campeã|Campeão|Campea|Campeao|Reservada|Reservado|3º Prêmio|3º Premio|Terceira|Terceiro)\s+', '', txt, flags=re.I).strip().upper()
+        if cat != 'GRANDE': cat = next((x for x in set(S[r[1]] for r in K) if nk(x) == nk(cat)), cat)
         if cat != 'GRANDE': assert cat in set(S[r[1]] for r in K), f'categoria não reconhecida: {cat!r}'
         pool = {r[9] for r in K if A[r[0]][2] == sx and (cat == 'GRANDE' or S[r[1]] == cat)}
         label = f'{"Fêmeas" if sx=="F" else "Machos"} · {["","Campeã(o)","Reservada(o)","3º Prêmio"][kind]} {cat}'
@@ -104,7 +105,7 @@ for pdf in pdfs:
 for key in sorted(camps_touched):
     sx, cat = key.split('|'); o = L['camp'][key]
     d = {'tipo': 'camp', 'sx': sx, 'cat': cat, 'l': o['l'], 'cl': o['cl'], 't': o['t']}
-    did = 'c-' + sx + '-' + cat.replace(' ', '-')
+    did = 'c-' + sx + '-' + unicodedata.normalize('NFD', cat).encode('ascii', 'ignore').decode().replace(' ', '-')
     f = os.path.join(OUT, did + '.json'); json.dump(d, open(f, 'w'), ensure_ascii=False)
     writes.append({'op': 'set', 'collection': 'aovivo', 'doc_id': did, 'file_path': f})
     if len(o['l']) < 3: avisos.append(f'{key}: campeonato incompleto ({len(o["l"])} de 3 PDFs) — falta {", ".join(n for k,n in [(1,"Campeã(o)"),(2,"Reservada(o)"),(3,"3º Prêmio")] if k not in [x[0] for x in o["l"]])}')
