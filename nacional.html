@@ -430,11 +430,20 @@ function fxDet(fx,open,pend){const g=fx.rows;const r0=g[0];const sx=A[r0[0]][2];
 function campTitle(sx,cat){return cat==='GRANDE'?(sx==='F'?'Grande Campeonato Fêmeas':'Grande Campeonato Machos'):'Campeonato '+(sx==='F'?'Fêmeas · ':'Machos · ')+tc(cat)}
 function campDet(k,o,open){const [sx,cat]=k.split('|');const nm=n=>{const x=(o.l||[]).find(y=>y[0]===n);const r=x&&BYCT.get(x[1]);return r?esc(A[r[0]][1]):'—'};
   return `<details class="cls cpd"${open?' open':''}><summary><span class="pill N">Campeonato</span><b>${esc(campTitle(sx,cat))}</b>${o.t?`<span class="status">${esc(tShow(o.t))}</span>`:''}<span class="muted fxwin">Campeã(o) ${nm(1)} · Res. ${nm(2)} · 3º ${nm(3)}</span></summary><div class="body" style="margin:4px 0 12px">${clList(o)}</div></details>`}
-function recentSec(){const it=[];fxAll().forEach(f=>{if(f.done)it.push({tk:f.tk,o:1,h:o=>fxDet(f,o)})});
-  Object.entries(LIVE.camp||{}).forEach(([k,o])=>{const sx=k.split('|')[0];if(ST.sx!=='T'&&sx!==ST.sx)return;it.push({tk:tKey(o.t),o:2,h:op=>campDet(k,o,op)})});
+const catOf=f=>{const r0=f.rows[0];return A[r0[0]][2]+'|'+S[r0[1]]};
+function catGroups(){const m=new Map();fxAll().forEach(f=>{const k=catOf(f);if(!m.has(k))m.set(k,[]);m.get(k).push(f)});return m}
+function catDet(k,fs){const [sx,cat]=k.split('|');const o=(LIVE.camp||{})[k];const nS=fs.reduce((a,f)=>a+f.subs.length,0),nD=fs.reduce((a,f)=>a+f.done,0),nA=fs.reduce((a,f)=>a+f.rows.length,0);
+  let tk='',t='';fs.forEach(f=>{if(f.tk>tk){tk=f.tk;t=f.t}});if(o&&tKey(o.t)>tk){tk=tKey(o.t);t=o.t}
+  const nm=n=>{const x=o&&(o.l||[]).find(y=>y[0]===n);const r=x&&BYCT.get(x[1]);return r?esc(A[r[0]][1]):'—'};
+  const st=o?'<span class="pill N">Campeonato</span>':nD===nS?'<span class="pill N">Julgada</span>':`<span class="pill I">Em andamento</span>`;
+  const ord=fs.slice().sort((x,y)=>x.seq-y.seq);
+  return {tk,h:()=>`<details class="cls catg"><summary>${st}<b>${sx==='F'?'Fêmeas':'Machos'} · ${esc(tc(cat))}</b><span class="muted num">${nD}/${nS} subs</span><span class="status">${nA} animais</span>${t?`<span class="status">${esc(tShow(t))}</span>`:''}${o?`<span class="muted fxwin">Campeã(o) ${nm(1)} · Res. ${nm(2)} · 3º ${nm(3)}</span>`:''}</summary><div class="gbody"><p class="note" style="margin:6px 0 4px"><b>Campeonato</b></p>${o?clList(o):'<p class="muted">Campeonato ainda não divulgado.</p>'}<p class="note" style="margin:12px 0 0"><b>Subdivisões</b> · ${nD} de ${nS} julgadas</p>${ord.map(f=>fxDet(f,false,true)).join('')}</div></details>`}}
+function recentSec(){const it=[];const cg=catGroups();
+  cg.forEach((fs,k)=>{const sx=k.split('|')[0];if(ST.sx!=='T'&&sx!==ST.sx)return;const o=(LIVE.camp||{})[k];if(!o&&!fs.some(f=>f.done))return;const d=catDet(k,fs);it.push({tk:d.tk,o:1,h:d.h})});
+  Object.entries(LIVE.camp||{}).forEach(([k,o])=>{const [sx,cat]=k.split('|');if(cat!=='GRANDE')return;if(ST.sx!=='T'&&sx!==ST.sx)return;it.push({tk:tKey(o.t),o:2,h:()=>campDet(k,o,false)})});
   it.sort((a,b)=>b.tk.localeCompare(a.tk)||b.o-a.o);
-  return it.map(x=>x.h(false)).join('')||'<p class="empty">Nenhum resultado ainda.</p>'}
-function pendSec(){const gm=new Map();fxAll().filter(f=>!f.done).forEach(f=>{const r0=f.rows[0];const k=A[r0[0]][2]+'|'+S[r0[1]];if(!gm.has(k))gm.set(k,[]);gm.get(k).push(f)});
+  return it.map(x=>x.h()).join('')||'<p class="empty">Nenhum resultado ainda.</p>'}
+function pendSec(){const gm=new Map();catGroups().forEach((fs,k)=>{if(fs.some(f=>f.done)||(LIVE.camp||{})[k])return;const pf=fs.filter(f=>!f.done);if(pf.length)gm.set(k,pf)});
   return [...gm.entries()].map(([k,fs])=>{const [sx,cat]=k.split('|');const n=fs.reduce((a,f)=>a+f.rows.length,0);const ids=fs.reduce((a,f)=>a+f.subs.length,0);const a0=fs[0].rows[0],a1=fs[fs.length-1].rows[0];
     return `<details class="cls catg"><summary><span class="pill cat">Aguardando</span><b>${sx==='F'?'Fêmeas':'Machos'} · ${esc(tc(cat))}</b><span class="muted num">${a0[2]}–${a1[3]} m · ${fs.length} faixa${fs.length>1?'s':''} · ${ids} sub${ids>1?'s':''}</span><span class="status">${n} animais</span></summary><div class="gbody">${fs.map(f=>fxDet(f,false,true)).join('')}</div></details>`}).join('')||'<p class="empty">Tudo julgado.</p>'}
 function view(){
@@ -455,7 +464,7 @@ function view(){
   <div id="favSec">${favSec()}</div>
   <div class="stack"><div class="head"><h3>Últimos resultados</h3><div class="ctl">
     <div class="seg" id="fS">${[['T','Todos'],['F','Fêmeas'],['M','Machos']].map(([k,l])=>`<button data-k="${k}" aria-pressed="${ST.sx===k}">${l}</button>`).join('')}</div></div></div>
-  <p class="note" style="margin-top:-4px">Do mais recente para o mais antigo. Toque para abrir.</p>
+  <p class="note" style="margin-top:-4px">Agrupado por categoria, com o campeonato e as subs dentro. Do mais recente para o mais antigo. Toque para abrir.</p>
   <div>${recentSec()}</div></div>
   <div class="stack"><div class="head"><h3>Aguardando julgamento</h3></div>
   <p class="note" style="margin-top:-4px">Agrupado por categoria. Toque para ver as faixas e os inscritos.</p>
