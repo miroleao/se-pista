@@ -439,9 +439,10 @@ function catDet(k,fs){const [sx,cat]=k.split('|');const o=(LIVE.camp||{})[k];con
   const ord=fs.slice().sort((x,y)=>x.seq-y.seq);
   return {tk,h:()=>`<details class="cls catg"><summary>${st}<b>${sx==='F'?'Fêmeas':'Machos'} · ${esc(tc(cat))}</b><span class="muted num">${nD}/${nS} subs</span><span class="status">${nA} animais</span>${t?`<span class="status">${esc(tShow(t))}</span>`:''}${o?`<span class="muted fxwin">Campeã(o) ${nm(1)} · Res. ${nm(2)} · 3º ${nm(3)}</span>`:''}</summary><div class="gbody"><p class="note" style="margin:6px 0 4px"><b>Campeonato</b></p>${o?clList(o):'<p class="muted">Campeonato ainda não divulgado.</p>'}<p class="note" style="margin:12px 0 0"><b>Subdivisões</b> · ${nD} de ${nS} julgadas</p>${ord.map(f=>fxDet(f,false,true)).join('')}</div></details>`}}
 function recentSec(){const it=[];const cg=catGroups();
-  cg.forEach((fs,k)=>{const sx=k.split('|')[0];if(ST.sx!=='T'&&sx!==ST.sx)return;const o=(LIVE.camp||{})[k];if(!o&&!fs.some(f=>f.done))return;const d=catDet(k,fs);it.push({tk:d.tk,o:1,h:d.h})});
-  Object.entries(LIVE.camp||{}).forEach(([k,o])=>{const [sx,cat]=k.split('|');if(cat!=='GRANDE')return;if(ST.sx!=='T'&&sx!==ST.sx)return;it.push({tk:tKey(o.t),o:2,h:()=>campDet(k,o,false)})});
-  it.sort((a,b)=>b.tk.localeCompare(a.tk)||b.o-a.o);
+  cg.forEach((fs,k)=>{const sx=k.split('|')[0];if(ST.sx!=='T'&&sx!==ST.sx)return;const o=(LIVE.camp||{})[k];if(!o&&!fs.some(f=>f.done))return;const d=catDet(k,fs);it.push({k,tk:d.tk,o:1,h:d.h})});
+  Object.entries(LIVE.camp||{}).forEach(([k,o])=>{const [sx,cat]=k.split('|');if(cat!=='GRANDE')return;if(ST.sx!=='T'&&sx!==ST.sx)return;it.push({k,tk:tKey(o.t),o:2,h:()=>campDet(k,o,false)})});
+  const ORD=['F|BEZERRA MENOR','F|BEZERRA MAIOR','F|NOVILHA MENOR','F|NOVILHA','F|NOVILHA MAIOR','F|VACA JOVEM','F|VACA','F|VACA ADULTA','M|BEZERRO MENOR','M|BEZERRO MAIOR','M|JÚNIOR MENOR','M|JÚNIOR','M|JÚNIOR MAIOR','M|TOURO JOVEM','M|TOURO SÊNIOR','F|GRANDE','M|GRANDE'];
+  const oi=x=>{const i=ORD.indexOf(x.k);return i<0?99:i};it.sort((a,b)=>oi(a)-oi(b));
   return it.map(x=>x.h()).join('')||'<p class="empty">Nenhum resultado ainda.</p>'}
 function pendSec(){const gm=new Map();catGroups().forEach((fs,k)=>{if(fs.some(f=>f.done)||(LIVE.camp||{})[k])return;const pf=fs.filter(f=>!f.done);if(pf.length)gm.set(k,pf)});
   return [...gm.entries()].map(([k,fs])=>{const [sx,cat]=k.split('|');const n=fs.reduce((a,f)=>a+f.rows.length,0);const ids=fs.reduce((a,f)=>a+f.subs.length,0);const a0=fs[0].rows[0],a1=fs[fs.length-1].rows[0];
@@ -464,7 +465,7 @@ function view(){
   <div id="favSec">${favSec()}</div>
   <div class="stack"><div class="head"><h3>Últimos resultados</h3><div class="ctl">
     <div class="seg" id="fS">${[['T','Todos'],['F','Fêmeas'],['M','Machos']].map(([k,l])=>`<button data-k="${k}" aria-pressed="${ST.sx===k}">${l}</button>`).join('')}</div></div></div>
-  <p class="note" style="margin-top:-4px">Agrupado por categoria, com o campeonato e as subs dentro. Do mais recente para o mais antigo. Toque para abrir.</p>
+  <p class="note" style="margin-top:-4px">Agrupado por categoria, com o campeonato e as subs dentro. Na ordem da pista: de Bezerra Menor a Vaca Adulta, depois de Bezerro Menor a Touro Sênior. Toque para abrir.</p>
   <div>${recentSec()}</div></div>
   <div class="stack"><div class="head"><h3>Aguardando julgamento</h3></div>
   <p class="note" style="margin-top:-4px">Agrupado por categoria. Toque para ver as faixas e os inscritos.</p>
