@@ -11,7 +11,7 @@
 "c-M-JUNIOR": 1,
 "c-M-JUNIOR-MAIOR": 1,
 "c-M-JÚNIOR-MENOR": 1,
-"c-M-TOURO-JOVEM": 2,
+"c-M-TOURO-JOVEM": 3,
 "s-17-A": 1,
 "s-17-B": 1,
 "s-18-A": 1,
@@ -51,6 +51,6 @@
 "s-47-A": 1,
 "s-48-A": 1,
 "s-49-A": 1,
-"status": 17
+"status": 18
 }
 }
