@@ -71,7 +71,7 @@ for pdf in pdfs:
     mc = re.search(r'Campeonato:\s*(.+)', t)
     if mc and 'Categoria' not in mc.group(0) and 'Sequência' not in t:
         txt = mc.group(1).strip(); up = nk(txt)
-        kind = 2 if 'RESERV' in up else 3 if ('PREMIO' in up or 'TERCEIR' in up) else 1
+        kind = 2 if 'RESERV' in up else 3 if ('PREMIO' in up or 'TERCEIR' in up or up.startswith('3')) else 1
         sx = 'M' if re.search(r'Sexo:\s*Macho', t) else 'F'
         cat = 'GRANDE' if 'GRANDE' in up else re.sub(r'^(Grande\s+)?(Campeã|Campeão|Campea|Campeao|Reservada|Reservado|3º Prêmio|3º Premio|Terceira|Terceiro)\s+', '', txt, flags=re.I).strip().upper()
         if cat != 'GRANDE': cat = next((x for x in set(S[r[1]] for r in K) if nk(x) == nk(cat)), cat)
