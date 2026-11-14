@@ -2,7 +2,11 @@
 """Lança PDFs de resultado da 55ª Expoinel Nacional 2026 de uma vez só.
 
 uso (na raiz do repositório):
-    python3 tools/lancar.py "DD/MM HH:MM" arquivo1.pdf [arquivo2.pdf ...] [--sv N] [--no-git]
+    python3 tools/lancar.py "DD/MM HH:MM" arquivo1.pdf [arquivo2.pdf ...] [--sv N] [--no-git] [--tatt]
+
+--tatt: modo Tattersal (Expoapi em diante). O catálogo vem de tools/catalogo_atual.json (gerado por
+tools/catalogo.py), o acompanhamento fica em tools/live_tatt.json e as versões do banco em
+tools/estado_tatt.json; o nacional.html NÃO é tocado. Sem --tatt, comporta-se como antes (Nacional).
 
 Aceita PDFs de sub (Sequência/Sub-divisão) e de campeonato (Campeã / Reservada / 3º Prêmio).
 Faz: git pull -> lê e confere cada PDF com o catálogo e a grade dos jurados -> embute no
@@ -14,11 +18,12 @@ import json, re, subprocess, sys, unicodedata, os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'tools', 'out'); os.makedirs(OUT, exist_ok=True)
-EST = os.path.join(ROOT, 'tools', 'estado.json')
+TATT = '--tatt' in sys.argv
+EST = os.path.join(ROOT, 'tools', 'estado_tatt.json' if TATT else 'estado.json')
 NAC = os.path.join(ROOT, 'nacional.html')
 
 args = sys.argv[1:]
-nogit = '--no-git' in args; args = [a for a in args if a != '--no-git']
+nogit = '--no-git' in args; args = [a for a in args if a not in ('--no-git', '--tatt')]
 sv = None
 if '--sv' in args:
     i = args.index('--sv'); sv = int(args[i + 1]); del args[i:i + 2]
@@ -28,9 +33,22 @@ assert re.fullmatch(r'\d\d/\d\d \d\d:\d\d', T), 'hora no formato "DD/MM HH:MM"'
 def sh(*c): return subprocess.run(c, cwd=ROOT, capture_output=True, text=True)
 if not nogit: sh('git', 'pull', '-q', '--rebase')
 
-s = open(NAC, encoding='utf8').read()
-m = re.search(r'(<script type="application/json" id="data">)(.*?)(</script>)', s, re.S)
-D = json.loads(m.group(2)); L = D['LIVE']; A, S, K = D['A'], D['S'], D['K']
+if TATT:
+    cat = json.load(open(os.path.join(ROOT, 'tools', 'catalogo_atual.json'), encoding='utf8'))
+    LP = os.path.join(ROOT, 'tools', 'live_tatt.json')
+    L = json.load(open(LP, encoding='utf8')) if os.path.exists(LP) else {'subs': {}, 'camp': {}, 'upd': ''}
+    # monta A, S, K no mesmo formato do nacional.html para reaproveitar o resto do script
+    S, A, K = [], [], []
+    def si(x):
+        if x not in S: S.append(x)
+        return S.index(x)
+    for r in cat['rows']:
+        ct, seq, sub, sx, ctg, m1, m2, nome, rg, pai, mae, avo, expo, peso, nasc = r
+        A.append([rg, nome, sx]); K.append([len(A) - 1, si(ctg), 0, 0, sub, 0, 0, si(expo), 0, ct, seq])
+else:
+    s = open(NAC, encoding='utf8').read()
+    m = re.search(r'(<script type="application/json" id="data">)(.*?)(</script>)', s, re.S)
+    D = json.loads(m.group(2)); L = D['LIVE']; A, S, K = D['A'], D['S'], D['K']
 nk = lambda x: re.sub(r'[^A-Z0-9]', '', unicodedata.normalize('NFD', x).encode('ascii', 'ignore').decode().upper())
 BYCT = {r[9]: r for r in K}
 tc = lambda x: ' '.join(w.capitalize() for w in str(x).split())
@@ -111,15 +129,19 @@ for key in sorted(camps_touched):
     if len(o['l']) < 3: avisos.append(f'{key}: campeonato incompleto ({len(o["l"])} de 3 PDFs) — falta {", ".join(n for k,n in [(1,"Campeã(o)"),(2,"Reservada(o)"),(3,"3º Prêmio")] if k not in [x[0] for x in o["l"]])}')
 
 L['upd'] = T
-s = s[:m.start(2)] + json.dumps(D, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/') + s[m.end(2):]
-open(NAC, 'w', encoding='utf8').write(s)
+if TATT:
+    json.dump(L, open(LP, 'w', encoding='utf8'), ensure_ascii=False)
+else:
+    s = s[:m.start(2)] + json.dumps(D, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/') + s[m.end(2):]
+    open(NAC, 'w', encoding='utf8').write(s)
 
 # versões dos docs do banco (cada gravação soma 1). Se o batch recusar por versão, ele informa a
 # versão atual: rode de novo com --sv N (status) ou corrija tools/estado.json e refaça o batch.
 est = json.load(open(EST)) if os.path.exists(EST) else {'v': {}}
 V = est.setdefault('v', {})
 if sv is not None: V['status'] = sv
-writes.append({'op': 'update', 'collection': 'aovivo', 'doc_id': 'status', 'data': {'upd': T}})
+if TATT and 'status' not in V: writes.append({'op': 'set', 'collection': 'aovivo', 'doc_id': 'status', 'data': {'tipo': 'status', 'upd': T}})
+else: writes.append({'op': 'update', 'collection': 'aovivo', 'doc_id': 'status', 'data': {'upd': T}})
 for w in writes:
     if w['doc_id'] in V: w['if_version'] = V[w['doc_id']]
     V[w['doc_id']] = V.get(w['doc_id'], 0) + 1
@@ -131,7 +153,7 @@ print(f'Total: {len(L["subs"])}/{tot} subs · {len(L["camp"])} campeonatos · up
 print('AVISOS:\n- ' + '\n- '.join(avisos) if avisos else 'Sem divergências.')
 if not nogit:
     msg = 'Resultados: ' + ', '.join(x.split(' ·')[0].split(':')[0] for x in resumo) + f' ({T})'
-    sh('git', 'add', 'nacional.html', 'tools/estado.json')
+    sh('git', 'add', *(['tools/live_tatt.json', 'tools/estado_tatt.json', 'tools/catalogo_atual.json'] if TATT else ['nacional.html', 'tools/estado.json']))
     r = sh('git', '-c', 'user.name=miroleao', '-c', 'user.email=mirobleao@gmail.com', 'commit', '-q', '-m',
            msg + '\n\nCo-Authored-By: Claude <noreply@anthropic.com>')
     p = sh('git', 'push', '-q', 'origin', 'main')
