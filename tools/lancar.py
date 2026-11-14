@@ -101,6 +101,9 @@ for pdf in pdfs:
         check(rows, g, pool, label)
         key = f'{sx}|{cat}'; o = L['camp'].setdefault(key, {'l': [], 'cl': [], 't': T})
         l = [x for x in o.get('l', []) if x[0] != kind] + [[kind, rows[0][1]]]; o['l'] = sorted(l)
+        if kind == 1 and len(pool) == 2 and len(rows) == 2:  # só 2 animais na categoria: o outro é o Reservado
+            o['l'] = sorted([x for x in o['l'] if x[0] != 2] + [[2, rows[1][1]]])
+            avisos.append(f'{label}: só 2 disputantes — Reservado(a) deduzido: {rows[1][1]} {tc(rows[1][2])}')
         tail = [x for x in o.get('cl', []) if x[0] >= 4]
         if kind == 3: tail = [[i + 4, r[1]] for i, r in enumerate(rows[1:])]
         o['cl'] = o['l'] + tail; o['t'] = T
