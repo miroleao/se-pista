@@ -56,16 +56,18 @@ tc = lambda x: ' '.join(w.capitalize() for w in str(x).split())
 def parse(pdf):
     t = subprocess.run(['pdftotext', '-layout', pdf, '-'], capture_output=True, text=True).stdout
     Ls = t.split('\n'); rows = []
+    nj = max(1, min(3, len(set(re.findall(r'Juiz\s*(\d+)', t)))))  # nº de jurados (Nacional: 3; Expovel: 1)
     for l in Ls:
-        mm = re.match(r'\s*(\d+)\s+(\d+)\s{2,}(.+?)\s{2,}(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s{2,}\S', l)
+        mm = re.match(r'\s*(\d+)\s+(\d+)\s{2,}(.+?)\s{2,}(\d+)((?:\s+\d+){%d})\s{2,}\S' % nj, l)
         if mm:
-            p, c, nm, n, j1, j2, j3 = mm.groups(); rows.append([int(p), int(c), nm.strip(), int(n), int(j1), int(j2), int(j3)])
+            p, c, nm, n, js = mm.groups(); js = [int(x) for x in js.split()] + [None] * (3 - nj)
+            rows.append([int(p), int(c), nm.strip(), int(n)] + js)
     i = next(k for k, l in enumerate(Ls) if 'NOTAS DO(S) JURADO(S)' in l)
     g = []
     for l in Ls[i + 2:i + 8]:
         nums = re.findall(r'\b\d+\b', l)
         if nums: g.append([int(x) for x in nums])
-    return t, Ls, rows, g[:3]
+    return t, Ls, rows, g[:nj]
 
 avisos, writes, resumo = [], [], []
 
@@ -75,7 +77,7 @@ def check(rows, g, pool, label):
         assert c in pool, f'{label}: catálogo {c} não pertence a esta disputa'
         if nk(A[BYCT[c][0]][1]) != nk(nm): avisos.append(f'{label}: nome diferente no {c} — catálogo "{A[BYCT[c][0]][1]}" × PDF "{nm}"')
         for k, j in enumerate((j1, j2, j3)):
-            if g[k][j - 1] != c: avisos.append(f'{label}: voto do jurado {k+1} no {c} ({j}º) não bate com a grade')
+            if j is not None and (k >= len(g) or j > len(g[k]) or g[k][j - 1] != c): avisos.append(f'{label}: voto do jurado {k+1} no {c} ({j}º) não bate com a grade')
     assert [x[0] for x in rows] == list(range(1, len(rows) + 1)), f'{label}: colocações fora de sequência'
     for a, b in zip(rows, rows[1:]):
         if a[3] == b[3]: avisos.append(f'{label}: empate {a[3]} pts — {a[1]} {tc(a[2])} ({a[0]}º) e {b[1]} {tc(b[2])} ({b[0]}º), desempate da organizadora')
@@ -114,7 +116,7 @@ for pdf in pdfs:
         aus = sorted(pool - {r[1] for r in rows})
         L['subs'][label] = {'r': [[c, p, n, j1, j2, j3] for p, c, nm, n, j1, j2, j3 in rows], 'aus': aus, 't': T}
         d = {'tipo': 'sub', 'seq': seq, 'sub': sub, 'cat': catx, 't': T, 'aus': aus,
-             'r': [{'c': c, 'p': p, 'n': n, 'j1': j1, 'j2': j2, 'j3': j3} for p, c, nm, n, j1, j2, j3 in rows]}
+             'r': [{k: v for k, v in (('c', c), ('p', p), ('n', n), ('j1', j1), ('j2', j2), ('j3', j3)) if v is not None} for p, c, nm, n, j1, j2, j3 in rows]}
         f = os.path.join(OUT, f's-{seq}-{sub}.json'); json.dump(d, open(f, 'w'), ensure_ascii=False)
         writes.append({'op': 'set', 'collection': 'aovivo', 'doc_id': f's-{seq}-{sub}', 'file_path': f})
         ausn = ', '.join(f'{c} {tc(A[BYCT[c][0]][1])}' for c in aus) or 'nenhuma'
