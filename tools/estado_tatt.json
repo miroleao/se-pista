@@ -2,9 +2,24 @@
 "v": {
 "c-F-BEZERRA-MAIOR": 1,
 "c-F-BEZERRA-MENOR": 1,
-"c-F-NOVILHA-MENOR": 1,
+"c-F-NOVILHA": 1,
+"c-F-NOVILHA-MAIOR": 1,
+"c-F-NOVILHA-MENOR": 2,
+"c-F-VACA-JOVEM": 1,
 "s-10-A": 1,
+"s-11-A": 1,
+"s-12-A": 1,
+"s-13-A": 1,
+"s-14-A": 1,
+"s-16-A": 1,
+"s-17-A": 1,
+"s-18-A": 1,
+"s-19-A": 1,
 "s-2-A": 1,
+"s-20-A": 1,
+"s-21-A": 1,
+"s-25-A": 1,
+"s-26-A": 1,
 "s-3-A": 1,
 "s-4-A": 1,
 "s-5-A": 1,
@@ -12,6 +27,6 @@
 "s-7-A": 1,
 "s-8-A": 1,
 "s-9-A": 1,
-"status": 1
+"status": 2
 }
 }
