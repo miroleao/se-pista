@@ -188,7 +188,14 @@ def main():
         if t['ct'] is not None and t['ct'] != r['ct']: avisos.append(f'ct {r["ct"]} "{r["animal"]}": a tabela por expositor traz {t["ct"]} (leitura de número no OCR; vale a ordem do catálogo)')
     for r in rows:
         for k in ('animal', 'pai', 'mae', 'avo', 'expositor'):
-            r[k] = re.sub(r'\bD[!|]\b', 'DI', r[k]).strip(' .|\\[]')
+            r[k] = re.sub(r'\bD[!|](?=\s|$)', 'DI', r[k]).strip(' .|\\[]')
+    # expositor: ajusta ruído de OCR ("EEDVALDO", "IJOAO") ao nome mais frequente parecido
+    from collections import Counter
+    freq = Counter(r['expositor'] for r in rows)
+    for r in rows:
+        if freq[r['expositor']] <= 2:
+            alvo = max(((difflib.SequenceMatcher(None, r['expositor'], e).ratio(), e) for e in freq if freq[e] > 2), default=(0, ''))
+            if alvo[0] >= 0.9: r['expositor'] = alvo[1]
     # conferências
     cts = [r['ct'] for r in rows]
     dup = sorted({c for c in cts if cts.count(c) > 1})
